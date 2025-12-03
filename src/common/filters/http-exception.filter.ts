@@ -27,6 +27,12 @@ export class ValidationException extends AppException {
   }
 }
 
+export class BadRequestException extends AppException {
+  constructor(message: string, details?: any) {
+    super(400, 'BAD_REQUEST', message, details);
+  }
+}
+
 export class UnauthorizedException extends AppException {
   constructor(message: string = 'Unauthorized') {
     super(401, 'UNAUTHORIZED', message);

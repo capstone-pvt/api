@@ -27,7 +27,13 @@ export class UsersService {
 
   async findAll(
     filters: UserFiltersDto,
-  ): Promise<{ users: UserDocument[]; totalPages: number }> {
+  ): Promise<{
+    users: UserDocument[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
     return this.usersRepository.findAll(filters);
   }
 

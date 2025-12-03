@@ -5,8 +5,11 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import appConfig from './config/app.config';
@@ -53,7 +56,10 @@ import * as Joi from 'joi';
     // Feature Modules
     PermissionsModule,
     RolesModule,
+    UsersModule,
     AuthModule,
+    AuditLogsModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

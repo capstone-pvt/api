@@ -61,7 +61,13 @@ export class UsersRepository {
 
   async findAll(
     filters: UserFiltersDto = {},
-  ): Promise<{ users: UserDocument[]; totalPages: number }> {
+  ): Promise<{
+    users: UserDocument[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
     const {
       search,
       role,
@@ -106,7 +112,13 @@ export class UsersRepository {
       );
     }
 
-    return { users: filteredUsers, totalPages: Math.ceil(total / limit) };
+    return {
+      users: filteredUsers,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async update(

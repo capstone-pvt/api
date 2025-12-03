@@ -8,6 +8,14 @@ import {
   UseGuards,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiBody,
+} from '@nestjs/swagger';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import type { Response, Request } from 'express';
 import type { AuthenticatedUser } from '../../common/interfaces/jwt-payload.interface';
 import { AuthService } from './auth.service';
@@ -18,10 +26,19 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { JwtRefreshGuard } from '../../common/guards/jwt-refresh.guard';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiBody({ type: RegisterDto })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully registered and logged in',
+  })
+  @ApiResponse({ status: 409, description: 'Email already registered' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
   @Public()
   @Post('register')
   async register(
@@ -48,6 +65,16 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many requests - rate limit exceeded',
+  })
+  @Throttle({ short: { limit: 5, ttl: 60000 } }) // 5 login attempts per minute
   @Public()
   @Post('login')
   async login(
@@ -61,7 +88,12 @@ export class AuthController {
       deviceInfo,
     );
 
-    this.setAuthCookies(response, accessToken, refreshToken, loginDto.rememberMe);
+    this.setAuthCookies(
+      response,
+      accessToken,
+      refreshToken,
+      loginDto.rememberMe,
+    );
 
     return {
       success: true,
@@ -72,6 +104,11 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({
+    summary: 'Refresh access token using refresh token from cookie',
+  })
+  @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   @Public()
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
@@ -102,6 +139,13 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({ summary: 'Get current authenticated user profile' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiResponse({
+    status: 200,
+    description: 'User profile retrieved successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async me(@GetUser() user: AuthenticatedUser) {
@@ -119,6 +163,8 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({ summary: 'Logout and invalidate refresh token' })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
   @Public()
   @Post('logout')
   async logout(
@@ -208,7 +254,12 @@ export class AuthController {
   }
 
   private sanitizeUser(user: any): any {
-    const { password, passwordResetToken, emailVerificationToken, ...sanitized } = user.toObject ? user.toObject() : user;
+    const {
+      password,
+      passwordResetToken,
+      emailVerificationToken,
+      ...sanitized
+    } = user.toObject ? user.toObject() : user;
     return sanitized;
   }
 }

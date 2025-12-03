@@ -25,9 +25,7 @@ export class UsersService {
     return this.usersRepository.findByEmailWithPassword(email);
   }
 
-  async findAll(
-    filters: UserFiltersDto,
-  ): Promise<{
+  async findAll(filters: UserFiltersDto): Promise<{
     users: UserDocument[];
     total: number;
     page: number;

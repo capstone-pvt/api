@@ -4,9 +4,7 @@ import { PermissionDocument } from './schemas/permission.schema';
 
 @Injectable()
 export class PermissionsService {
-  constructor(
-    private readonly permissionsRepository: PermissionsRepository,
-  ) {}
+  constructor(private readonly permissionsRepository: PermissionsRepository) {}
 
   async findAll(): Promise<PermissionDocument[]> {
     return this.permissionsRepository.findAll();
@@ -28,9 +26,7 @@ export class PermissionsService {
     return this.permissionsRepository.count();
   }
 
-  async getGroupedByCategory(): Promise<
-    Record<string, PermissionDocument[]>
-  > {
+  async getGroupedByCategory(): Promise<Record<string, PermissionDocument[]>> {
     const permissions = await this.findAll();
     const grouped: Record<string, PermissionDocument[]> = {};
 
@@ -42,5 +38,17 @@ export class PermissionsService {
     });
 
     return grouped;
+  }
+
+  async create(permission: {
+    name: string;
+    displayName: string;
+    description: string;
+    resource: string;
+    action: string;
+    category: string;
+    isSystemPermission?: boolean;
+  }): Promise<PermissionDocument> {
+    return this.permissionsRepository.create(permission);
   }
 }

@@ -22,7 +22,9 @@ export class JwtRefreshStrategy extends PassportStrategy(
           return request?.cookies?.refreshToken;
         },
       ]),
-      secretOrKey: configService.get<string>('jwt.refreshSecret') || 'fallback-refresh-secret',
+      secretOrKey:
+        configService.get<string>('jwt.refreshSecret') ||
+        'fallback-refresh-secret',
       passReqToCallback: true,
     });
   }

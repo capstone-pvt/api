@@ -11,10 +11,7 @@ export class PermissionsRepository {
   ) {}
 
   async findAll(): Promise<PermissionDocument[]> {
-    return this.permissionModel
-      .find()
-      .sort({ category: 1, name: 1 })
-      .exec();
+    return this.permissionModel.find().sort({ category: 1, name: 1 }).exec();
   }
 
   async findById(id: string): Promise<PermissionDocument | null> {
@@ -31,5 +28,18 @@ export class PermissionsRepository {
 
   async count(): Promise<number> {
     return this.permissionModel.countDocuments().exec();
+  }
+
+  async create(permission: {
+    name: string;
+    displayName: string;
+    description: string;
+    resource: string;
+    action: string;
+    category: string;
+    isSystemPermission?: boolean;
+  }): Promise<PermissionDocument> {
+    const newPermission = new this.permissionModel(permission);
+    return newPermission.save();
   }
 }

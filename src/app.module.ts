@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { WinstonModule } from 'nest-winston';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
@@ -10,9 +12,12 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { HealthModule } from './modules/health/health.module';
+import { CustomThrottlerGuard } from './common/guards/throttler.guard';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import appConfig from './config/app.config';
+import { winstonConfig } from './common/logger/winston.config';
 import * as Joi from 'joi';
 
 @Module({
@@ -36,6 +41,9 @@ import * as Joi from 'joi';
       }),
     }),
 
+    // Winston Logger Module
+    WinstonModule.forRoot(winstonConfig),
+
     // MongoDB Connection
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
@@ -45,9 +53,20 @@ import * as Joi from 'joi';
       inject: [ConfigService],
     }),
 
-    // Rate Limiting (Throttler)
+    // Rate Limiting (Throttler) - Global default
     ThrottlerModule.forRoot([
       {
+        name: 'short',
+        ttl: 1000, // 1 second
+        limit: 10, // 10 requests per second
+      },
+      {
+        name: 'medium',
+        ttl: 10000, // 10 seconds
+        limit: 50, // 50 requests per 10 seconds
+      },
+      {
+        name: 'long',
         ttl: 60000, // 1 minute
         limit: 100, // 100 requests per minute
       },
@@ -60,8 +79,15 @@ import * as Joi from 'joi';
     AuthModule,
     AuditLogsModule,
     SettingsModule,
+    HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: CustomThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  AuditLogsRepository,
-  AuditLogFilters,
-} from './audit-logs.repository';
+import { AuditLogsRepository, AuditLogFilters } from './audit-logs.repository';
 import { AuditLogDocument } from './schemas/audit-log.schema';
 
 export interface CreateAuditLogData {
@@ -21,9 +18,7 @@ export interface CreateAuditLogData {
 
 @Injectable()
 export class AuditLogsService {
-  constructor(
-    private readonly auditLogsRepository: AuditLogsRepository,
-  ) {}
+  constructor(private readonly auditLogsRepository: AuditLogsRepository) {}
 
   async log(data: CreateAuditLogData): Promise<void> {
     try {
@@ -85,10 +80,7 @@ export class AuditLogsService {
     return this.auditLogsRepository.getRecentActivity(limit);
   }
 
-  async getStatistics(filters?: {
-    startDate?: Date;
-    endDate?: Date;
-  }): Promise<{
+  async getStatistics(filters?: { startDate?: Date; endDate?: Date }): Promise<{
     totalLogs: number;
     successCount: number;
     failureCount: number;

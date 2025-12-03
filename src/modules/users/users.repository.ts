@@ -59,9 +59,7 @@ export class UsersRepository {
       .exec();
   }
 
-  async findAll(
-    filters: UserFiltersDto = {},
-  ): Promise<{
+  async findAll(filters: UserFiltersDto = {}): Promise<{
     users: UserDocument[];
     total: number;
     page: number;
@@ -121,10 +119,7 @@ export class UsersRepository {
     };
   }
 
-  async update(
-    id: string,
-    data: UpdateUserDto,
-  ): Promise<UserDocument | null> {
+  async update(id: string, data: UpdateUserDto): Promise<UserDocument | null> {
     return this.userModel
       .findByIdAndUpdate(id, data, { new: true })
       .populate({

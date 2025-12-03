@@ -4,7 +4,10 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { UsersService } from '../../users/users.service';
-import { JwtPayload, AuthenticatedUser } from '../../../common/interfaces/jwt-payload.interface';
+import {
+  JwtPayload,
+  AuthenticatedUser,
+} from '../../../common/interfaces/jwt-payload.interface';
 import { UnauthorizedException } from '../../../common/filters/http-exception.filter';
 
 @Injectable()

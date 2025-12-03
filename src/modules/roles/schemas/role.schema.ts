@@ -39,8 +39,6 @@ export class Role {
 export const RoleSchema = SchemaFactory.createForClass(Role);
 
 // Instance method: Check if this role can manage target role
-RoleSchema.methods.canManage = function (
-  targetRole: RoleDocument,
-): boolean {
+RoleSchema.methods.canManage = function (targetRole: RoleDocument): boolean {
   return this.hierarchy < targetRole.hierarchy;
 };

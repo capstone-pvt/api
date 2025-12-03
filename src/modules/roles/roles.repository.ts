@@ -7,9 +7,7 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 
 @Injectable()
 export class RolesRepository {
-  constructor(
-    @InjectModel(Role.name) private roleModel: Model<RoleDocument>,
-  ) {}
+  constructor(@InjectModel(Role.name) private roleModel: Model<RoleDocument>) {}
 
   async create(data: CreateRoleDto): Promise<RoleDocument> {
     const role = new this.roleModel({
@@ -28,20 +26,14 @@ export class RolesRepository {
   }
 
   async findById(id: string): Promise<RoleDocument | null> {
-    return this.roleModel
-      .findById(id)
-      .populate('permissions')
-      .exec();
+    return this.roleModel.findById(id).populate('permissions').exec();
   }
 
   async findByName(name: string): Promise<RoleDocument | null> {
     return this.roleModel.findOne({ name }).exec();
   }
 
-  async update(
-    id: string,
-    data: UpdateRoleDto,
-  ): Promise<RoleDocument | null> {
+  async update(id: string, data: UpdateRoleDto): Promise<RoleDocument | null> {
     const updateData: any = { ...data };
 
     if (data.permissions) {

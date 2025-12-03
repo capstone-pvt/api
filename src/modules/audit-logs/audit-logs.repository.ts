@@ -155,10 +155,7 @@ export class AuditLogsRepository {
       .exec();
   }
 
-  async getStatistics(filters?: {
-    startDate?: Date;
-    endDate?: Date;
-  }): Promise<{
+  async getStatistics(filters?: { startDate?: Date; endDate?: Date }): Promise<{
     totalLogs: number;
     successCount: number;
     failureCount: number;
@@ -216,20 +213,14 @@ export class AuditLogsRepository {
       successCount,
       failureCount,
       byAction: byAction.reduce(
-        (
-          acc: Record<string, number>,
-          item: { _id: string; count: number },
-        ) => {
+        (acc: Record<string, number>, item: { _id: string; count: number }) => {
           acc[item._id] = item.count;
           return acc;
         },
         {},
       ),
       byResource: byResource.reduce(
-        (
-          acc: Record<string, number>,
-          item: { _id: string; count: number },
-        ) => {
+        (acc: Record<string, number>, item: { _id: string; count: number }) => {
           acc[item._id] = item.count;
           return acc;
         },

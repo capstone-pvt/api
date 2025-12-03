@@ -102,7 +102,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
             typeof exceptionResponse === 'string'
               ? exceptionResponse
               : exceptionResponse.message || 'An error occurred',
-          details: typeof exceptionResponse === 'object' ? exceptionResponse : undefined,
+          details:
+            typeof exceptionResponse === 'object'
+              ? exceptionResponse
+              : undefined,
         },
       };
     } else if (exception instanceof Error) {

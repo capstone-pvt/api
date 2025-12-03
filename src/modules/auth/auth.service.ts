@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { UsersService } from '../users/users.service';
 import { SessionsService } from '../sessions/sessions.service';
 import { RegisterDto } from './dto/register.dto';
@@ -21,11 +22,21 @@ export class AuthService {
     private sessionsService: SessionsService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {}
 
   async register(data: RegisterDto): Promise<UserDocument> {
+    this.logger.log('info', `Registration attempt for email: ${data.email}`, {
+      context: 'AuthService',
+    });
+
     const existingUser = await this.usersService.findByEmail(data.email);
     if (existingUser) {
+      this.logger.warn(
+        'warn',
+        `Registration failed - email already exists: ${data.email}`,
+        { context: 'AuthService' },
+      );
       throw new ConflictException('Email already registered');
     }
 
@@ -33,6 +44,12 @@ export class AuthService {
       ...data,
       roles: [],
     });
+
+    this.logger.log(
+      'info',
+      `User registered successfully: ${user.email} (ID: ${user._id})`,
+      { context: 'AuthService' },
+    );
 
     return user;
   }
@@ -50,20 +67,55 @@ export class AuthService {
     accessToken: string;
     refreshToken: string;
   }> {
+    this.logger.log(
+      'info',
+      `Login attempt for email: ${credentials.email} from IP: ${deviceInfo.ip}`,
+      {
+        context: 'AuthService',
+        ip: deviceInfo.ip,
+        browser: deviceInfo.browser,
+        os: deviceInfo.os,
+      },
+    );
+
     const user = await this.usersService.findByEmailWithPassword(
       credentials.email,
     );
 
     if (!user || !user.isActive) {
+      this.logger.warn(
+        'warn',
+        `Failed login attempt for email: ${credentials.email} - Invalid credentials or inactive user`,
+        {
+          context: 'AuthService',
+          ip: deviceInfo.ip,
+        },
+      );
       throw new UnauthorizedException('Invalid credentials');
     }
 
     if (!user.comparePassword) {
+      this.logger.error(
+        'error',
+        `Failed login attempt for email: ${credentials.email} - comparePassword method missing`,
+        {
+          context: 'AuthService',
+        },
+      );
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const isPasswordValid = await user.comparePassword(credentials.password);
     if (!isPasswordValid) {
+      this.logger.warn(
+        'warn',
+        `Failed login attempt for email: ${credentials.email} - Invalid password`,
+        {
+          context: 'AuthService',
+          ip: deviceInfo.ip,
+          userId: user._id.toString(),
+        },
+      );
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -83,8 +135,10 @@ export class AuthService {
       roles: (user.roles as any[]).map((r) => r.name),
     };
 
-    const jwtSecret = this.configService.get<string>('jwt.secret') || 'fallback-secret';
-    const jwtExpiration = this.configService.get<string>('jwt.accessTokenExpiration') || '15m';
+    const jwtSecret =
+      this.configService.get<string>('jwt.secret') || 'fallback-secret';
+    const jwtExpiration =
+      this.configService.get<string>('jwt.accessTokenExpiration') || '15m';
 
     const accessToken = this.jwtService.sign(payload, {
       secret: jwtSecret,
@@ -92,18 +146,19 @@ export class AuthService {
     } as any);
 
     const rememberMe = credentials.rememberMe || false;
-    const refreshSecret = this.configService.get<string>('jwt.refreshSecret') || 'fallback-refresh-secret';
+    const refreshSecret =
+      this.configService.get<string>('jwt.refreshSecret') ||
+      'fallback-refresh-secret';
     const refreshExpiration = rememberMe
-      ? (this.configService.get<string>('jwt.refreshTokenExpirationLong') || '30d')
-      : (this.configService.get<string>('jwt.refreshTokenExpirationShort') || '7d');
+      ? this.configService.get<string>('jwt.refreshTokenExpirationLong') ||
+        '30d'
+      : this.configService.get<string>('jwt.refreshTokenExpirationShort') ||
+        '7d';
 
-    const refreshToken = this.jwtService.sign(
-      { userId: user._id.toString() },
-      {
-        secret: refreshSecret,
-        expiresIn: refreshExpiration,
-      } as any,
-    );
+    const refreshToken = this.jwtService.sign({ userId: user._id.toString() }, {
+      secret: refreshSecret,
+      expiresIn: refreshExpiration,
+    } as any);
 
     // Create session
     const expiresAt = new Date(
@@ -111,11 +166,24 @@ export class AuthService {
     );
 
     await this.sessionsService.createSession({
-      userId: user._id as Types.ObjectId,
+      userId: user._id,
       refreshToken,
       deviceInfo,
       expiresAt,
     });
+
+    this.logger.log(
+      'info',
+      `User logged in successfully: ${user.email} (ID: ${user._id})`,
+      {
+        context: 'AuthService',
+        userId: user._id.toString(),
+        ip: deviceInfo.ip,
+        browser: deviceInfo.browser,
+        os: deviceInfo.os,
+        rememberMe: credentials.rememberMe,
+      },
+    );
 
     return { user, accessToken, refreshToken };
   }
@@ -156,8 +224,10 @@ export class AuthService {
       roles: (user.roles as any[]).map((r) => r.name),
     };
 
-    const jwtSecret = this.configService.get<string>('jwt.secret') || 'fallback-secret';
-    const jwtExpiration = this.configService.get<string>('jwt.accessTokenExpiration') || '15m';
+    const jwtSecret =
+      this.configService.get<string>('jwt.secret') || 'fallback-secret';
+    const jwtExpiration =
+      this.configService.get<string>('jwt.accessTokenExpiration') || '15m';
 
     const accessToken = this.jwtService.sign(jwtPayload, {
       secret: jwtSecret,
@@ -168,6 +238,7 @@ export class AuthService {
   }
 
   async logout(refreshToken: string): Promise<void> {
+    this.logger.log('info', 'User logged out', { context: 'AuthService' });
     await this.sessionsService.invalidateToken(refreshToken);
   }
 
@@ -176,6 +247,10 @@ export class AuthService {
   }
 
   async logoutAllSessions(userId: string): Promise<void> {
+    this.logger.log('info', `All sessions invalidated for user ID: ${userId}`, {
+      context: 'AuthService',
+      userId,
+    });
     await this.sessionsService.invalidateAllUserSessions(userId);
   }
 }

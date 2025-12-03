@@ -10,6 +10,14 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiParam,
+} from '@nestjs/swagger';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -22,11 +30,19 @@ import {
   BadRequestException,
 } from '../../common/filters/http-exception.filter';
 
+@ApiTags('Roles')
+@ApiBearerAuth('JWT-auth')
 @Controller('roles')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
+  @ApiOperation({ summary: 'Get all roles' })
+  @ApiResponse({ status: 200, description: 'Roles retrieved successfully' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing roles.read permission',
+  })
   @Get()
   @RequirePermission('roles.read')
   async findAll() {
@@ -40,13 +56,22 @@ export class RolesController {
     };
   }
 
+  @ApiOperation({ summary: 'Create a new role' })
+  @ApiBody({ type: CreateRoleDto })
+  @ApiResponse({ status: 201, description: 'Role created successfully' })
+  @ApiResponse({
+    status: 409,
+    description: 'Role with this name already exists',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing roles.create permission',
+  })
   @Post()
   @RequirePermission('roles.create')
   async create(@Body() createRoleDto: CreateRoleDto) {
     // Check if role with same name already exists
-    const existingRole = await this.rolesService.findByName(
-      createRoleDto.name,
-    );
+    const existingRole = await this.rolesService.findByName(createRoleDto.name);
 
     if (existingRole) {
       throw new ConflictException('Role with this name already exists');
@@ -63,6 +88,14 @@ export class RolesController {
     };
   }
 
+  @ApiOperation({ summary: 'Get role by ID' })
+  @ApiParam({ name: 'id', description: 'Role ID', type: String })
+  @ApiResponse({ status: 200, description: 'Role retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Role not found' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing roles.read permission',
+  })
   @Get(':id')
   @RequirePermission('roles.read')
   async findOne(@Param('id') id: string) {
@@ -80,12 +113,19 @@ export class RolesController {
     };
   }
 
+  @ApiOperation({ summary: 'Update role by ID' })
+  @ApiParam({ name: 'id', description: 'Role ID', type: String })
+  @ApiBody({ type: UpdateRoleDto })
+  @ApiResponse({ status: 200, description: 'Role updated successfully' })
+  @ApiResponse({ status: 404, description: 'Role not found' })
+  @ApiResponse({ status: 400, description: 'Cannot update system roles' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing roles.update permission',
+  })
   @Put(':id')
   @RequirePermission('roles.update')
-  async update(
-    @Param('id') id: string,
-    @Body() updateRoleDto: UpdateRoleDto,
-  ) {
+  async update(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
     const role = await this.rolesService.findById(id);
 
     if (!role) {
@@ -108,6 +148,15 @@ export class RolesController {
     };
   }
 
+  @ApiOperation({ summary: 'Delete role by ID' })
+  @ApiParam({ name: 'id', description: 'Role ID', type: String })
+  @ApiResponse({ status: 200, description: 'Role deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Role not found' })
+  @ApiResponse({ status: 400, description: 'Cannot delete system roles' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing roles.delete permission',
+  })
   @Delete(':id')
   @RequirePermission('roles.delete')
   @HttpCode(HttpStatus.OK)

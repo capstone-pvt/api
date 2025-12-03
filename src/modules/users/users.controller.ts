@@ -11,6 +11,15 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import type { AuthenticatedUser } from '../../common/interfaces/jwt-payload.interface';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -27,11 +36,20 @@ import {
   UnauthorizedException,
 } from '../../common/filters/http-exception.filter';
 
+@ApiTags('Users')
+@ApiBearerAuth('JWT-auth')
 @Controller('users')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @ApiOperation({ summary: 'Get all users with pagination and filters' })
+  @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing users.read permission',
+  })
   @Get()
   @RequirePermission('users.read')
   async findAll(@Query() filters: UserFiltersDto) {
@@ -52,6 +70,15 @@ export class UsersController {
     };
   }
 
+  @ApiOperation({ summary: 'Create a new user' })
+  @ApiBody({ type: CreateUserDto })
+  @ApiResponse({ status: 201, description: 'User created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing users.create permission',
+  })
+  @ApiResponse({ status: 409, description: 'User already exists' })
   @Post()
   @RequirePermission('users.create')
   async create(@Body() createUserDto: CreateUserDto) {
@@ -66,6 +93,14 @@ export class UsersController {
     };
   }
 
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiParam({ name: 'id', description: 'User ID', type: String })
+  @ApiResponse({ status: 200, description: 'User retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing users.read permission',
+  })
   @Get(':id')
   @RequirePermission('users.read')
   async findOne(@Param('id') id: string) {
@@ -83,6 +118,15 @@ export class UsersController {
     };
   }
 
+  @ApiOperation({ summary: 'Update user by ID (self or with permission)' })
+  @ApiParam({ name: 'id', description: 'User ID', type: String })
+  @ApiBody({ type: UpdateUserDto })
+  @ApiResponse({ status: 200, description: 'User updated successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Cannot update other users without permission',
+  })
   @Put(':id')
   async update(
     @Param('id') id: string,
@@ -127,10 +171,22 @@ export class UsersController {
     };
   }
 
+  @ApiOperation({ summary: 'Delete user by ID' })
+  @ApiParam({ name: 'id', description: 'User ID', type: String })
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 400, description: 'Cannot delete own account' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing users.delete permission',
+  })
   @Delete(':id')
   @RequirePermission('users.delete')
   @HttpCode(HttpStatus.OK)
-  async delete(@Param('id') id: string, @GetUser() currentUser: AuthenticatedUser) {
+  async delete(
+    @Param('id') id: string,
+    @GetUser() currentUser: AuthenticatedUser,
+  ) {
     // Prevent users from deleting themselves
     if (currentUser.userId === id) {
       throw new BadRequestException('You cannot delete your own account');
@@ -150,6 +206,15 @@ export class UsersController {
     };
   }
 
+  @ApiOperation({ summary: 'Assign roles to user' })
+  @ApiParam({ name: 'id', description: 'User ID', type: String })
+  @ApiBody({ type: AssignRolesDto })
+  @ApiResponse({ status: 200, description: 'User roles updated successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing users.update permission',
+  })
   @Put(':id/roles')
   @RequirePermission('users.update')
   async assignRoles(

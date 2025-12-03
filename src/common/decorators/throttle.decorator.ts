@@ -10,19 +10,13 @@ export const THROTTLE_TTL_KEY = 'throttle_ttl';
  */
 export const Throttle = (limit: number, ttl: number) => {
   return (
-    target: any,
+    target: object,
     propertyKey?: string,
     descriptor?: PropertyDescriptor,
   ) => {
-    SetMetadata(THROTTLE_LIMIT_KEY, limit)(
-      target,
-      propertyKey as string,
-      descriptor as PropertyDescriptor,
-    );
-    SetMetadata(THROTTLE_TTL_KEY, ttl)(
-      target,
-      propertyKey as string,
-      descriptor as PropertyDescriptor,
-    );
+    if (propertyKey && descriptor) {
+      SetMetadata(THROTTLE_LIMIT_KEY, limit)(target, propertyKey, descriptor);
+      SetMetadata(THROTTLE_TTL_KEY, ttl)(target, propertyKey, descriptor);
+    }
   };
 };

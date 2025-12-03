@@ -1,34 +1,44 @@
 import { Injectable, ExecutionContext } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import type {
+  ThrottlerModuleOptions,
+  ThrottlerStorage,
+} from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
+
+interface RequestWithUser {
+  user?: {
+    userId?: string;
+  };
+  ip?: string;
+  headers?: {
+    'x-forwarded-for'?: string;
+  };
+}
 
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
   constructor(
-    protected readonly options: any,
-    protected readonly storageService: any,
+    protected readonly options: ThrottlerModuleOptions,
+    protected readonly storageService: ThrottlerStorage,
     protected readonly reflector: Reflector,
   ) {
     super(options, storageService, reflector);
   }
 
-  protected async getTracker(req: Record<string, any>): Promise<string> {
+  protected getTracker(req: RequestWithUser): Promise<string> {
     // Use user ID if authenticated, otherwise use IP address
     const user = req.user;
-    if (user && user.userId) {
-      return `user-${user.userId}`;
+    if (user?.userId) {
+      return Promise.resolve(`user-${user.userId}`);
     }
-    return req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    return Promise.resolve(
+      req.ip || req.headers?.['x-forwarded-for'] || 'unknown',
+    );
   }
 
-  protected async shouldSkip(context: ExecutionContext): Promise<boolean> {
-    // Check if the route is marked as @Public()
-    const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
-    // Don't skip public routes - they still need rate limiting
-    return false;
+  protected shouldSkip(_context: ExecutionContext): Promise<boolean> {
+    // Don't skip any routes - they all need rate limiting
+    return Promise.resolve(false);
   }
 }

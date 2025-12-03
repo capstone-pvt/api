@@ -18,7 +18,6 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiParam,
-  ApiQuery,
 } from '@nestjs/swagger';
 import type { AuthenticatedUser } from '../../common/interfaces/jwt-payload.interface';
 import { UsersService } from './users.service';
@@ -243,8 +242,12 @@ export class UsersController {
 
   private sanitizeUser(user: any): any {
     const sanitized = user.toObject ? user.toObject() : user;
-    const { password, passwordResetToken, emailVerificationToken, ...rest } =
-      sanitized;
+    const {
+      password: _password,
+      passwordResetToken: _passwordResetToken,
+      emailVerificationToken: _emailVerificationToken,
+      ...rest
+    } = sanitized;
     return rest;
   }
 }

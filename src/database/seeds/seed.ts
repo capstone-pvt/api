@@ -43,7 +43,9 @@ async function seed() {
     if (!superAdminRole) {
       superAdminRole = await rolesService.create({
         name: 'Super Admin',
+        displayName: 'Super Admin',
         description: 'Full system access with all permissions',
+        hierarchy: 1,
         permissions: allPermissionIds,
         isSystemRole: true,
       } as any);
@@ -63,8 +65,10 @@ async function seed() {
     if (!adminRole) {
       adminRole = await rolesService.create({
         name: 'Admin',
+        displayName: 'Administrator',
         description:
           'Administrative access to manage users, roles, and content',
+        hierarchy: 2,
         permissions: adminPermissions,
         isSystemRole: true,
       } as any);
@@ -81,7 +85,9 @@ async function seed() {
     if (!userRole) {
       userRole = await rolesService.create({
         name: 'User',
+        displayName: 'User',
         description: 'Standard user with basic read access',
+        hierarchy: 3,
         permissions: userPermissions,
         isSystemRole: true,
       } as any);

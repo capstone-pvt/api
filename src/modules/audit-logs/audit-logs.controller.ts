@@ -11,6 +11,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { AuditLogFiltersDto } from './dto/audit-log-filters.dto';
+import { SkipAuditLog } from './decorators/audit-log.decorator';
 
 @ApiTags('Audit Logs')
 @ApiBearerAuth('JWT-auth')
@@ -29,6 +30,7 @@ export class AuditLogsController {
     description: 'Forbidden - Missing users.read permission',
   })
   @Get()
+  @SkipAuditLog() // Don't log read operations on audit logs
   @RequirePermission('users.read')
   async findAll(@Query() filters: AuditLogFiltersDto) {
     const { logs, pagination } =
@@ -65,6 +67,7 @@ export class AuditLogsController {
     description: 'Forbidden - Missing analytics.view permission',
   })
   @Get('statistics')
+  @SkipAuditLog() // Don't log statistics reads
   @RequirePermission('analytics.view')
   async getStatistics(
     @Query('startDate') startDate?: string,

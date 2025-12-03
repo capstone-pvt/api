@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -6,6 +6,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import cookieParser from 'cookie-parser';
+import { AuditLogInterceptor, AuditLogsService } from './modules/audit-logs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -45,8 +46,13 @@ async function bootstrap() {
   // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Global response transform interceptor
-  app.useGlobalInterceptors(new TransformInterceptor());
+  // Global interceptors
+  const auditLogsService = app.get(AuditLogsService);
+  const reflector = app.get(Reflector);
+  app.useGlobalInterceptors(
+    new TransformInterceptor(),
+    new AuditLogInterceptor(auditLogsService, reflector),
+  );
 
   // Swagger API Documentation
   const config = new DocumentBuilder()

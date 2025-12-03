@@ -89,7 +89,7 @@ async function seed() {
         description: 'Standard user with basic read access',
         hierarchy: 3,
         permissions: userPermissions,
-        isSystemRole: true,
+        isSystemRole: false,
       } as any);
       logger.log('Created role: User');
     } else {

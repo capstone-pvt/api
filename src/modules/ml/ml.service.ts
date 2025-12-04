@@ -3,49 +3,44 @@ import { Cron } from '@nestjs/schedule';
 import * as xlsx from 'xlsx';
 import { PersonnelService } from '../personnel/personnel.service';
 
-// Simple placeholder for a trained model
-let trainedModel: any = null;
+let trainedModel: {
+  predict: (features: Record<string, number>) => number;
+  trainedAt: Date;
+} | null = null;
+
+const FEATURES = ['PAA', 'KSM', 'TS', 'CM', 'AL', 'GO'];
+const TARGET = 'GEN AVG';
 
 @Injectable()
 export class MlService {
   constructor(private readonly personnelService: PersonnelService) {}
 
-  @Cron('0 0 * * *') // Run once a day at midnight
+  @Cron('0 0 * * *')
   async handleCron() {
-    // This can be used for automatic retraining from a predefined source if needed
     console.log('Scheduled task: Checking for model updates...');
   }
 
-  async trainModelFromFile(
-    fileBuffer: Buffer,
-  ): Promise<{ message: string; records: number }> {
+  async trainModelFromFile(fileBuffer: Buffer): Promise<{ message: string; records: number }> {
     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(worksheet);
+    const data = xlsx.utils.sheet_to_json(worksheet) as Record<string, number>[];
 
-    // Placeholder for actual model training logic
-    // For now, we'll just store a "model" based on the average of a 'performance_score' column
-    const scores = data
-      .map((row: any) => row.performance_score)
-      .filter(Number.isFinite);
-    if (scores.length === 0) {
-      throw new Error(
-        'No valid performance scores found in the uploaded file.',
-      );
-    }
-    const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+    // Simulate training a multiple linear regression model (y = b0 + b1*x1 + b2*x2 + ...)
+    // This is a simplified placeholder. A real implementation would use a library like scikit-learn.
+    const { weights, intercept } = this.simpleLinearRegression(data);
 
     trainedModel = {
-      predict: (features: any) => {
-        // In a real scenario, you'd use the features to predict.
-        // For now, we'll return a value based on the trained average.
-        return averageScore * 1.1; // Simplified logic
+      predict: (features: Record<string, number>): number => {
+        const prediction =
+          intercept +
+          FEATURES.reduce((acc, feat) => acc + (weights[feat] || 0) * (features[feat] || 0), 0);
+        return prediction;
       },
       trainedAt: new Date(),
     };
 
-    console.log('Model trained with average score:', averageScore);
+    console.log('Model trained with weights:', weights, 'and intercept:', intercept);
 
     return {
       message: 'Model trained successfully from file.',
@@ -53,29 +48,22 @@ export class MlService {
     };
   }
 
-  async predictPerformance(
-    personnelId: string,
-  ): Promise<{ prediction: number; trainedAt: Date }> {
+  async predictPerformance(personnelId: string): Promise<{ prediction: number; trainedAt: Date }> {
     if (!trainedModel) {
-      throw new NotFoundException(
-        'Model not trained yet. Please upload a training file.',
-      );
+      throw new NotFoundException('Model not trained yet. Please upload a training file.');
     }
 
     const personnel = await this.personnelService.findOne(personnelId);
     if (!personnel) {
       throw new NotFoundException('Personnel not found.');
     }
-
-    // In a real implementation, you would extract features from the personnel object
-    const features = {
-      department: personnel.department,
-      jobTitle: personnel.jobTitle,
-    };
+    
+    // In a real scenario, you'd fetch the latest performance evaluation for the personnel
+    // For now, we'll generate some dummy features.
+    const features = { PAA: 4.5, KSM: 4.2, TS: 4.3, CM: 4.1, AL: 4.4, GO: 4.0 };
     const prediction = trainedModel.predict(features);
     const roundedPrediction = Number.parseFloat(prediction.toFixed(2));
 
-    // Update the personnel record with the new prediction
     await this.personnelService.update(personnelId, {
       predictedPerformance: roundedPrediction.toString(),
     });
@@ -83,20 +71,33 @@ export class MlService {
     return { prediction: roundedPrediction, trainedAt: trainedModel.trainedAt };
   }
 
-  async predictManual(
-    metrics: Record<string, number>,
-  ): Promise<{ prediction: number; trainedAt: Date }> {
+  async predictManual(metrics: Record<string, number>): Promise<{ prediction: number; trainedAt: Date }> {
     if (!trainedModel) {
-      throw new NotFoundException(
-        'Model not trained yet. Please upload a training file.',
-      );
+      throw new NotFoundException('Model not trained yet. Please upload a training file.');
     }
 
-    // In a real scenario, you would use the input metrics to make a prediction
-    // For now, we'll use a simplified logic based on the trained model
     const prediction = trainedModel.predict(metrics);
     const roundedPrediction = Number.parseFloat(prediction.toFixed(2));
 
     return { prediction: roundedPrediction, trainedAt: trainedModel.trainedAt };
+  }
+
+  private simpleLinearRegression(data: Record<string, number>[]): { weights: Record<string, number>; intercept: number } {
+    // This is a highly simplified placeholder for model training.
+    // It calculates a pseudo-weight for each feature based on its average ratio to the target.
+    const avgTarget = data.reduce((sum, row) => sum + row[TARGET], 0) / data.length;
+    const avgFeatures = FEATURES.reduce((acc, feat) => {
+      acc[feat] = data.reduce((sum, row) => sum + row[feat], 0) / data.length;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const weights = FEATURES.reduce((acc, feat) => {
+      acc[feat] = (avgFeatures[feat] / avgTarget) * 0.15; // Arbitrary scaling
+      return acc;
+    }, {} as Record<string, number>);
+
+    const intercept = 0.1; // Arbitrary intercept
+
+    return { weights, intercept };
   }
 }

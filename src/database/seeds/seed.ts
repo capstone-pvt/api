@@ -55,62 +55,62 @@ async function seed() {
     }
 
     // Admin Role - most permissions except permission management
-    const adminPermissions = allPermissionIds.filter((id) => {
-      const name = Object.keys(permissionIds).find(
-        (k) => permissionIds[k] === id,
-      );
-      return !name?.includes('permissions.manage');
-    });
-    let adminRole = await rolesService.findByName('Admin');
-    if (!adminRole) {
-      adminRole = await rolesService.create({
-        name: 'Admin',
-        displayName: 'Administrator',
-        description:
-          'Administrative access to manage users, roles, and content',
-        hierarchy: 2,
-        permissions: adminPermissions,
-        isSystemRole: true,
-      } as any);
-      logger.log('Created role: Admin');
-    } else {
-      logger.log('Role already exists: Admin');
-    }
-
-    // User Role - basic read permissions
-    const userPermissions = Object.entries(permissionIds)
-      .filter(([key]) => key.includes('.read') || key === 'users.update')
-      .map(([, id]) => id);
-    let userRole = await rolesService.findByName('User');
-    if (!userRole) {
-      userRole = await rolesService.create({
-        name: 'User',
-        displayName: 'User',
-        description: 'Standard user with basic read access',
-        hierarchy: 3,
-        permissions: userPermissions,
-        isSystemRole: false,
-      } as any);
-      logger.log('Created role: User');
-    } else {
-      logger.log('Role already exists: User');
-    }
+    // const adminPermissions = allPermissionIds.filter((id) => {
+    //   const name = Object.keys(permissionIds).find(
+    //     (k) => permissionIds[k] === id,
+    //   );
+    //   return !name?.includes('permissions.manage');
+    // });
+    // let adminRole = await rolesService.findByName('Admin');
+    // if (!adminRole) {
+    //   adminRole = await rolesService.create({
+    //     name: 'Admin',
+    //     displayName: 'Administrator',
+    //     description:
+    //       'Administrative access to manage users, roles, and content',
+    //     hierarchy: 2,
+    //     permissions: adminPermissions,
+    //     isSystemRole: true,
+    //   } as any);
+    //   logger.log('Created role: Admin');
+    // } else {
+    //   logger.log('Role already exists: Admin');
+    // }
+    //
+    // // User Role - basic read permissions
+    // const userPermissions = Object.entries(permissionIds)
+    //   .filter(([key]) => key.includes('.read') || key === 'users.update')
+    //   .map(([, id]) => id);
+    // let userRole = await rolesService.findByName('User');
+    // if (!userRole) {
+    //   userRole = await rolesService.create({
+    //     name: 'User',
+    //     displayName: 'User',
+    //     description: 'Standard user with basic read access',
+    //     hierarchy: 3,
+    //     permissions: userPermissions,
+    //     isSystemRole: false,
+    //   } as any);
+    //   logger.log('Created role: User');
+    // } else {
+    //   logger.log('Role already exists: User');
+    // }
 
     // Seed Default Super Admin User
     logger.log('Seeding default super admin user...');
-    const adminEmail = 'admin@example.com';
+    const adminEmail = 'sysadmin';
     const existingAdmin = await usersService.findByEmail(adminEmail);
-
+    const defaultPassword = 'P@ssw0rd123';
     if (!existingAdmin) {
       const adminUser = await usersService.create({
         firstName: 'Super',
         lastName: 'Admin',
         email: adminEmail,
-        password: 'Admin@123456',
+        password: defaultPassword,
         roles: [superAdminRole._id.toString()],
       });
       logger.log(`Created super admin user: ${adminEmail}`);
-      logger.log('Default password: Admin@123456');
+      logger.log(`Default password: ${defaultPassword}`);
       logger.warn(
         '⚠️  IMPORTANT: Change the default admin password immediately!',
       );

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import * as xlsx from 'xlsx';
 import { PersonnelService } from '../personnel/personnel.service';
+import { PerformanceEvaluationsService } from '../performance-evaluations/performance-evaluations.service';
 
 let trainedModel: {
   predict: (features: Record<string, number>) => number;
@@ -10,10 +11,20 @@ let trainedModel: {
 
 const FEATURES = ['PAA', 'KSM', 'TS', 'CM', 'AL', 'GO'];
 const TARGET = 'GEN AVG';
+const METRIC_FAILURE_THRESHOLD = 3.0;
+
+interface PredictionResponse {
+  prediction: number;
+  trainedAt: Date;
+  failedMetrics: string[];
+}
 
 @Injectable()
 export class MlService {
-  constructor(private readonly personnelService: PersonnelService) {}
+  constructor(
+    private readonly personnelService: PersonnelService,
+    private readonly performanceEvaluationsService: PerformanceEvaluationsService,
+  ) {}
 
   @Cron('0 0 * * *')
   async handleCron() {
@@ -26,8 +37,6 @@ export class MlService {
     const worksheet = workbook.Sheets[sheetName];
     const data = xlsx.utils.sheet_to_json(worksheet) as Record<string, number>[];
 
-    // Simulate training a multiple linear regression model (y = b0 + b1*x1 + b2*x2 + ...)
-    // This is a simplified placeholder. A real implementation would use a library like scikit-learn.
     const { weights, intercept } = this.simpleLinearRegression(data);
 
     trainedModel = {
@@ -48,43 +57,51 @@ export class MlService {
     };
   }
 
-  async predictPerformance(personnelId: string): Promise<{ prediction: number; trainedAt: Date }> {
+  async predictPerformance(personnelId: string): Promise<PredictionResponse> {
     if (!trainedModel) {
       throw new NotFoundException('Model not trained yet. Please upload a training file.');
     }
 
-    const personnel = await this.personnelService.findOne(personnelId);
-    if (!personnel) {
-      throw new NotFoundException('Personnel not found.');
+    const latestEvaluation = await this.performanceEvaluationsService.findLatestByPersonnelId(personnelId);
+    if (!latestEvaluation) {
+      throw new NotFoundException('No performance evaluation found for this person. Please add an evaluation first.');
     }
-    
-    // In a real scenario, you'd fetch the latest performance evaluation for the personnel
-    // For now, we'll generate some dummy features.
-    const features = { PAA: 4.5, KSM: 4.2, TS: 4.3, CM: 4.1, AL: 4.4, GO: 4.0 };
+
+    const features = latestEvaluation.scores;
     const prediction = trainedModel.predict(features);
     const roundedPrediction = Number.parseFloat(prediction.toFixed(2));
+
+    const failedMetrics = FEATURES.filter(feat => (features as any)[feat] < METRIC_FAILURE_THRESHOLD);
 
     await this.personnelService.update(personnelId, {
       predictedPerformance: roundedPrediction.toString(),
     });
 
-    return { prediction: roundedPrediction, trainedAt: trainedModel.trainedAt };
+    return { prediction: roundedPrediction, trainedAt: trainedModel.trainedAt, failedMetrics };
   }
 
-  async predictManual(metrics: Record<string, number>): Promise<{ prediction: number; trainedAt: Date }> {
+  async predictManual(
+    metrics: Record<string, number>,
+    personnelId?: string,
+  ): Promise<PredictionResponse> {
     if (!trainedModel) {
       throw new NotFoundException('Model not trained yet. Please upload a training file.');
     }
 
     const prediction = trainedModel.predict(metrics);
     const roundedPrediction = Number.parseFloat(prediction.toFixed(2));
+    const failedMetrics = FEATURES.filter(feat => metrics[feat] < METRIC_FAILURE_THRESHOLD);
 
-    return { prediction: roundedPrediction, trainedAt: trainedModel.trainedAt };
+    if (personnelId) {
+      await this.personnelService.update(personnelId, {
+        predictedPerformance: roundedPrediction.toString(),
+      });
+    }
+
+    return { prediction: roundedPrediction, trainedAt: trainedModel.trainedAt, failedMetrics };
   }
 
   private simpleLinearRegression(data: Record<string, number>[]): { weights: Record<string, number>; intercept: number } {
-    // This is a highly simplified placeholder for model training.
-    // It calculates a pseudo-weight for each feature based on its average ratio to the target.
     const avgTarget = data.reduce((sum, row) => sum + row[TARGET], 0) / data.length;
     const avgFeatures = FEATURES.reduce((acc, feat) => {
       acc[feat] = data.reduce((sum, row) => sum + row[feat], 0) / data.length;
@@ -92,11 +109,11 @@ export class MlService {
     }, {} as Record<string, number>);
 
     const weights = FEATURES.reduce((acc, feat) => {
-      acc[feat] = (avgFeatures[feat] / avgTarget) * 0.15; // Arbitrary scaling
+      acc[feat] = (avgFeatures[feat] / avgTarget) * 0.15;
       return acc;
     }, {} as Record<string, number>);
 
-    const intercept = 0.1; // Arbitrary intercept
+    const intercept = 0.1;
 
     return { weights, intercept };
   }

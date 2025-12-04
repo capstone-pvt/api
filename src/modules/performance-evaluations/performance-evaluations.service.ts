@@ -29,8 +29,13 @@ export class PerformanceEvaluationsService {
   }
 
   async findOne(id: string): Promise<PerformanceEvaluation | null> {
+    return this.performanceEvaluationModel.findById(id).populate('personnel').exec();
+  }
+
+  async findLatestByPersonnelId(personnelId: string): Promise<PerformanceEvaluation | null> {
     return this.performanceEvaluationModel
-      .findById(id)
+      .findOne({ personnel: personnelId })
+      .sort({ evaluationDate: -1 }) // Sort by date descending to get the latest
       .populate('personnel')
       .exec();
   }

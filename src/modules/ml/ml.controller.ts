@@ -7,7 +7,7 @@ import {
   Body,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { MlService } from './ml.service';
+import { MlService, PredictionResponse } from './ml.service';
 
 interface ManualPredictionDto {
   metrics: Record<string, number>;
@@ -25,12 +25,12 @@ export class MlController {
   }
 
   @Post('predict/:personnelId')
-  async predictPerformance(@Param('personnelId') personnelId: string) {
+  async predictPerformance(@Param('personnelId') personnelId: string): Promise<PredictionResponse> {
     return this.mlService.predictPerformance(personnelId);
   }
 
   @Post('predict-manual')
-  async predictManual(@Body() payload: ManualPredictionDto) {
+  async predictManual(@Body() payload: ManualPredictionDto): Promise<PredictionResponse> {
     return this.mlService.predictManual(payload.metrics, payload.personnelId);
   }
 }

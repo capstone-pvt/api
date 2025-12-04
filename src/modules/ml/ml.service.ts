@@ -13,7 +13,7 @@ const FEATURES = ['PAA', 'KSM', 'TS', 'CM', 'AL', 'GO'];
 const TARGET = 'GEN AVG';
 const METRIC_FAILURE_THRESHOLD = 3.0;
 
-interface PredictionResponse {
+export interface PredictionResponse {
   prediction: number;
   trainedAt: Date;
   failedMetrics: string[];
@@ -68,7 +68,8 @@ export class MlService {
     }
 
     const features = latestEvaluation.scores;
-    const prediction = trainedModel.predict(features);
+    // Use a double cast via 'unknown' to satisfy TypeScript's strictness.
+    const prediction = trainedModel.predict(features as unknown as Record<string, number>);
     const roundedPrediction = Number.parseFloat(prediction.toFixed(2));
 
     const failedMetrics = FEATURES.filter(feat => (features as any)[feat] < METRIC_FAILURE_THRESHOLD);

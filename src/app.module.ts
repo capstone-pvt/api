@@ -18,6 +18,7 @@ import { DepartmentsModule } from './modules/departments/departments.module';
 import { PersonnelModule } from './modules/personnel/personnel.module';
 import { PerformanceEvaluationsModule } from './modules/performance-evaluations/performance-evaluations.module';
 import { MlModule } from './modules/ml/ml.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { CustomThrottlerGuard } from './common/guards/throttler.guard';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -27,14 +28,11 @@ import * as Joi from 'joi';
 
 @Module({
   imports: [
-    // Configuration Module with validation
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig, jwtConfig, appConfig],
       validationSchema: Joi.object({
-        NODE_ENV: Joi.string()
-          .valid('development', 'production', 'test')
-          .default('development'),
+        NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
         PORT: Joi.number().default(5000),
         MONGODB_URI: Joi.string().required(),
         JWT_SECRET: Joi.string().required().min(32),
@@ -45,11 +43,7 @@ import * as Joi from 'joi';
         FRONTEND_URL: Joi.string().default('http://localhost:3000'),
       }),
     }),
-
-    // Winston Logger Module
     WinstonModule.forRoot(winstonConfig),
-
-    // MongoDB Connection
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -57,30 +51,8 @@ import * as Joi from 'joi';
       }),
       inject: [ConfigService],
     }),
-
-    // Rate Limiting (Throttler) - Global default
-    ThrottlerModule.forRoot([
-      {
-        name: 'short',
-        ttl: 1000, // 1 second
-        limit: 10, // 10 requests per second
-      },
-      {
-        name: 'medium',
-        ttl: 10000, // 10 seconds
-        limit: 50, // 50 requests per 10 seconds
-      },
-      {
-        name: 'long',
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute
-      },
-    ]),
-
-    // Schedule Module
+    ThrottlerModule.forRoot([{ name: 'short', ttl: 1000, limit: 10 }, { name: 'medium', ttl: 10000, limit: 50 }, { name: 'long', ttl: 60000, limit: 100 }]),
     ScheduleModule.forRoot(),
-
-    // Feature Modules
     PermissionsModule,
     RolesModule,
     UsersModule,
@@ -92,6 +64,7 @@ import * as Joi from 'joi';
     PersonnelModule,
     PerformanceEvaluationsModule,
     MlModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [

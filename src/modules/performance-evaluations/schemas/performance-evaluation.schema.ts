@@ -2,27 +2,14 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { Personnel } from '../../personnel/schemas/personnel.schema';
 
-export type PerformanceEvaluationDocument = PerformanceEvaluation & Document;
-
-@Schema({ _id: false }) // No _id for the sub-document
+@Schema({ _id: false })
 class Scores {
-  @Prop({ required: true })
-  PAA: number;
-
-  @Prop({ required: true })
-  KSM: number;
-
-  @Prop({ required: true })
-  TS: number;
-
-  @Prop({ required: true })
-  CM: number;
-
-  @Prop({ required: true })
-  AL: number;
-
-  @Prop({ required: true })
-  GO: number;
+  @Prop({ required: true }) PAA: number;
+  @Prop({ required: true }) KSM: number;
+  @Prop({ required: true }) TS: number;
+  @Prop({ required: true }) CM: number;
+  @Prop({ required:true }) AL: number;
+  @Prop({ required: true }) GO: number;
 }
 
 const ScoresSchema = SchemaFactory.createForClass(Scores);
@@ -35,6 +22,9 @@ export class PerformanceEvaluation {
   @Prop({ required: true })
   evaluationDate: Date;
 
+  @Prop({ required: true })
+  semester: string; // e.g., "1st Semester 2024"
+
   @Prop({ type: ScoresSchema, required: true })
   scores: Scores;
 
@@ -42,7 +32,7 @@ export class PerformanceEvaluation {
   feedback: string;
 
   @Prop()
-  evaluatedBy: string; // Could be a manager's ID
+  evaluatedBy: string;
 }
 
 export const PerformanceEvaluationSchema = SchemaFactory.createForClass(PerformanceEvaluation);

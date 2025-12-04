@@ -10,23 +10,12 @@ import {
 import { Type } from 'class-transformer';
 
 class ScoresDto {
-  @IsNumber()
-  PAA: number;
-
-  @IsNumber()
-  KSM: number;
-
-  @IsNumber()
-  TS: number;
-
-  @IsNumber()
-  CM: number;
-
-  @IsNumber()
-  AL: number;
-
-  @IsNumber()
-  GO: number;
+  @IsNumber() PAA: number;
+  @IsNumber() KSM: number;
+  @IsNumber() TS: number;
+  @IsNumber() CM: number;
+  @IsNumber() AL: number;
+  @IsNumber() GO: number;
 }
 
 export class CreatePerformanceEvaluationDto {
@@ -36,7 +25,11 @@ export class CreatePerformanceEvaluationDto {
 
   @IsDateString()
   @IsNotEmpty()
-  evaluationDate: string; // Changed from Date to string
+  evaluationDate: string;
+
+  @IsString()
+  @IsNotEmpty()
+  semester: string;
 
   @IsObject()
   @ValidateNested()

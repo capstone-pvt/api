@@ -32,6 +32,9 @@ export class Personnel {
 
   @Prop()
   gender: string;
+
+  @Prop()
+  predictedPerformance: string;
 }
 
 export const PersonnelSchema = SchemaFactory.createForClass(Personnel);

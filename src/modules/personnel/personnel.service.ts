@@ -23,20 +23,20 @@ export class PersonnelService {
     return this.personnelModel.find().populate('department').exec();
   }
 
-  async findOne(id: string): Promise<Personnel> {
+  async findOne(id: string): Promise<Personnel | null> {
     return this.personnelModel.findById(id).populate('department').exec();
   }
 
   async update(
     id: string,
     updatePersonnelDto: UpdatePersonnelDto,
-  ): Promise<Personnel> {
+  ): Promise<Personnel | null> {
     return this.personnelModel
       .findByIdAndUpdate(id, updatePersonnelDto, { new: true })
       .exec();
   }
 
-  async remove(id: string): Promise<Personnel> {
+  async remove(id: string): Promise<Personnel | null> {
     return this.personnelModel.findByIdAndDelete(id).exec();
   }
 }

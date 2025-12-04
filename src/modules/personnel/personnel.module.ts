@@ -12,5 +12,6 @@ import { Personnel, PersonnelSchema } from './schemas/personnel.schema';
   ],
   controllers: [PersonnelController],
   providers: [PersonnelService],
+  exports: [PersonnelService],
 })
 export class PersonnelModule {}

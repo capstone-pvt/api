@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { WinstonModule } from 'nest-winston';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
@@ -15,6 +16,8 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { HealthModule } from './modules/health/health.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { PersonnelModule } from './modules/personnel/personnel.module';
+import { PerformanceEvaluationsModule } from './modules/performance-evaluations/performance-evaluations.module';
+import { MlModule } from './modules/ml/ml.module';
 import { CustomThrottlerGuard } from './common/guards/throttler.guard';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -38,7 +41,7 @@ import * as Joi from 'joi';
         JWT_REFRESH_SECRET: Joi.string().required().min(32),
         JWT_ACCESS_TOKEN_EXPIRATION: Joi.string().default('15m'),
         JWT_REFRESH_TOKEN_EXPIRATION_SHORT: Joi.string().default('7d'),
-        JWT_REFRESH_TOKEN_EXPIRATION_LONG: JJoi.string().default('30d'),
+        JWT_REFRESH_TOKEN_EXPIRATION_LONG: Joi.string().default('30d'),
         FRONTEND_URL: Joi.string().default('http://localhost:3000'),
       }),
     }),
@@ -74,6 +77,9 @@ import * as Joi from 'joi';
       },
     ]),
 
+    // Schedule Module
+    ScheduleModule.forRoot(),
+
     // Feature Modules
     PermissionsModule,
     RolesModule,
@@ -84,6 +90,8 @@ import * as Joi from 'joi';
     HealthModule,
     DepartmentsModule,
     PersonnelModule,
+    PerformanceEvaluationsModule,
+    MlModule,
   ],
   controllers: [AppController],
   providers: [

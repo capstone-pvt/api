@@ -10,6 +10,7 @@ import { AuditLog, AuditLogSchema } from '../audit-logs/schemas/audit-log.schema
 
 @Module({
   imports: [
+    // Directly import all necessary models to make this module self-contained
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Personnel.name, schema: PersonnelSchema },

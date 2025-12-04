@@ -47,7 +47,8 @@ export class AnalyticsService {
       { $project: { date: '$_id', count: 1, _id: 0 } },
     ]);
 
-    const recentActivities = this.auditLogModel.find().sort({ timestamp: -1 }).limit(5).populate('user', 'username');
+    // --- Correcting the populate path from 'user' to 'userId' ---
+    const recentActivities = this.auditLogModel.find().sort({ timestamp: -1 }).limit(5).populate('userId', 'email');
 
     const [
       users,

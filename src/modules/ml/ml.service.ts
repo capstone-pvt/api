@@ -3,6 +3,9 @@ import { Cron } from '@nestjs/schedule';
 import * as xlsx from 'xlsx';
 import { PersonnelService } from '../personnel/personnel.service';
 import { PerformanceEvaluationsService } from '../performance-evaluations/performance-evaluations.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { PerformanceEvaluation, PerformanceEvaluationDocument } from '../performance-evaluations/schemas/performance-evaluation.schema';
+import { Model } from 'mongoose';
 
 let trainedModel: {
   predict: (features: Record<string, number>) => number;
@@ -24,11 +27,45 @@ export class MlService {
   constructor(
     private readonly personnelService: PersonnelService,
     private readonly performanceEvaluationsService: PerformanceEvaluationsService,
+    @InjectModel(PerformanceEvaluation.name)
+    private readonly performanceEvaluationModel: Model<PerformanceEvaluationDocument>,
   ) {}
 
   @Cron('0 0 * * *')
   async handleCron() {
     console.log('Scheduled task: Checking for model updates...');
+  }
+
+  async getAnalytics() {
+    const overallAverages = await this.performanceEvaluationModel.aggregate([
+      {
+        $group: {
+          _id: null,
+          PAA: { $avg: '$scores.PAA' },
+          KSM: { $avg: '$scores.KSM' },
+          TS: { $avg: '$scores.TS' },
+          CM: { $avg: '$scores.CM' },
+          AL: { $avg: '$scores.AL' },
+          GO: { $avg: '$scores.GO' },
+          totalEvaluations: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const semesterTrends = await this.performanceEvaluationModel.aggregate([
+      {
+        $group: {
+          _id: '$semester',
+          avgScore: { $avg: { $avg: ['$scores.PAA', '$scores.KSM', '$scores.TS', '$scores.CM', '$scores.AL', '$scores.GO'] } },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    return {
+      overallAverages: overallAverages[0] || {},
+      semesterTrends,
+    };
   }
 
   async trainModelFromFile(fileBuffer: Buffer): Promise<{ message: string; records: number }> {
@@ -68,7 +105,6 @@ export class MlService {
     }
 
     const features = latestEvaluation.scores;
-    // Use a double cast via 'unknown' to satisfy TypeScript's strictness.
     const prediction = trainedModel.predict(features as unknown as Record<string, number>);
     const roundedPrediction = Number.parseFloat(prediction.toFixed(2));
 

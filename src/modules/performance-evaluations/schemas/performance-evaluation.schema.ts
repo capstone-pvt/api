@@ -2,13 +2,16 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { Personnel } from '../../personnel/schemas/personnel.schema';
 
+// Add the 'export' keyword here
+export type PerformanceEvaluationDocument = PerformanceEvaluation & Document;
+
 @Schema({ _id: false })
 class Scores {
   @Prop({ required: true }) PAA: number;
   @Prop({ required: true }) KSM: number;
   @Prop({ required: true }) TS: number;
   @Prop({ required: true }) CM: number;
-  @Prop({ required:true }) AL: number;
+  @Prop({ required: true }) AL: number;
   @Prop({ required: true }) GO: number;
 }
 
@@ -23,7 +26,7 @@ export class PerformanceEvaluation {
   evaluationDate: Date;
 
   @Prop({ required: true })
-  semester: string; // e.g., "1st Semester 2024"
+  semester: string;
 
   @Prop({ type: ScoresSchema, required: true })
   scores: Scores;

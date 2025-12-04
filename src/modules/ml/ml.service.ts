@@ -16,7 +16,9 @@ export class MlService {
     console.log('Scheduled task: Checking for model updates...');
   }
 
-  async trainModelFromFile(fileBuffer: Buffer): Promise<{ message: string; records: number }> {
+  async trainModelFromFile(
+    fileBuffer: Buffer,
+  ): Promise<{ message: string; records: number }> {
     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
@@ -24,12 +26,16 @@ export class MlService {
 
     // Placeholder for actual model training logic
     // For now, we'll just store a "model" based on the average of a 'performance_score' column
-    const scores = data.map((row: any) => row.performance_score).filter(Number.isFinite);
+    const scores = data
+      .map((row: any) => row.performance_score)
+      .filter(Number.isFinite);
     if (scores.length === 0) {
-      throw new Error('No valid performance scores found in the uploaded file.');
+      throw new Error(
+        'No valid performance scores found in the uploaded file.',
+      );
     }
     const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
-    
+
     trainedModel = {
       predict: (features: any) => {
         // In a real scenario, you'd use the features to predict.
@@ -47,9 +53,13 @@ export class MlService {
     };
   }
 
-  async predictPerformance(personnelId: string): Promise<{ prediction: number; trainedAt: Date }> {
+  async predictPerformance(
+    personnelId: string,
+  ): Promise<{ prediction: number; trainedAt: Date }> {
     if (!trainedModel) {
-      throw new NotFoundException('Model not trained yet. Please upload a training file.');
+      throw new NotFoundException(
+        'Model not trained yet. Please upload a training file.',
+      );
     }
 
     const personnel = await this.personnelService.findOne(personnelId);
@@ -58,7 +68,10 @@ export class MlService {
     }
 
     // In a real implementation, you would extract features from the personnel object
-    const features = { department: personnel.department, jobTitle: personnel.jobTitle };
+    const features = {
+      department: personnel.department,
+      jobTitle: personnel.jobTitle,
+    };
     const prediction = trainedModel.predict(features);
     const roundedPrediction = Number.parseFloat(prediction.toFixed(2));
 
@@ -70,9 +83,13 @@ export class MlService {
     return { prediction: roundedPrediction, trainedAt: trainedModel.trainedAt };
   }
 
-  async predictManual(metrics: Record<string, number>): Promise<{ prediction: number; trainedAt: Date }> {
+  async predictManual(
+    metrics: Record<string, number>,
+  ): Promise<{ prediction: number; trainedAt: Date }> {
     if (!trainedModel) {
-      throw new NotFoundException('Model not trained yet. Please upload a training file.');
+      throw new NotFoundException(
+        'Model not trained yet. Please upload a training file.',
+      );
     }
 
     // In a real scenario, you would use the input metrics to make a prediction

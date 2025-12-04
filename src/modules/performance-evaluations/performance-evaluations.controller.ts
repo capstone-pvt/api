@@ -18,7 +18,9 @@ export class PerformanceEvaluationsController {
   ) {}
 
   @Post()
-  create(@Body() createPerformanceEvaluationDto: CreatePerformanceEvaluationDto) {
+  create(
+    @Body() createPerformanceEvaluationDto: CreatePerformanceEvaluationDto,
+  ) {
     return this.performanceEvaluationsService.create(
       createPerformanceEvaluationDto,
     );

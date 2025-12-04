@@ -22,11 +22,7 @@ export function getIp(request: Request): string {
   }
 
   // Fallback to connection remote address
-  return (
-    request.socket.remoteAddress ||
-    request.ip ||
-    'unknown'
-  );
+  return request.socket.remoteAddress || request.ip || 'unknown';
 }
 
 /**

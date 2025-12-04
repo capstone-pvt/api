@@ -12,9 +12,7 @@ export class DepartmentsService {
     private readonly departmentModel: Model<DepartmentDocument>,
   ) {}
 
-  async create(
-    createDepartmentDto: CreateDepartmentDto,
-  ): Promise<Department> {
+  async create(createDepartmentDto: CreateDepartmentDto): Promise<Department> {
     const createdDepartment = new this.departmentModel(createDepartmentDto);
     return createdDepartment.save();
   }

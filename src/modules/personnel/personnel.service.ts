@@ -12,9 +12,7 @@ export class PersonnelService {
     private readonly personnelModel: Model<PersonnelDocument>,
   ) {}
 
-  async create(
-    createPersonnelDto: CreatePersonnelDto,
-  ): Promise<Personnel> {
+  async create(createPersonnelDto: CreatePersonnelDto): Promise<Personnel> {
     const createdPersonnel = new this.personnelModel(createPersonnelDto);
     return createdPersonnel.save();
   }

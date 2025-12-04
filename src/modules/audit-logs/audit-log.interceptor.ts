@@ -143,7 +143,8 @@ export class AuditLogInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest();
     const urlParts = request.originalUrl.split('/').filter(Boolean);
     // Skip 'api' prefix and get the resource name
-    const resourceIndex = urlParts.findIndex((part: string) => part === 'api') + 1;
+    const resourceIndex =
+      urlParts.findIndex((part: string) => part === 'api') + 1;
     return urlParts[resourceIndex] || 'unknown';
   }
 

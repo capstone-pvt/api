@@ -29,7 +29,10 @@ export class PerformanceEvaluationsService {
   }
 
   async findOne(id: string): Promise<PerformanceEvaluation | null> {
-    return this.performanceEvaluationModel.findById(id).populate('personnel').exec();
+    return this.performanceEvaluationModel
+      .findById(id)
+      .populate('personnel')
+      .exec();
   }
 
   async update(

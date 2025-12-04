@@ -40,7 +40,8 @@ async function seedAuditLogs() {
         status: 'failure' as const,
         errorMessage: 'Invalid credentials',
         ipAddress: '192.168.1.101',
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15',
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15',
       },
       {
         userId: '507f1f77bcf86cd799439012',
@@ -50,7 +51,8 @@ async function seedAuditLogs() {
         resource: 'auth',
         status: 'success' as const,
         ipAddress: '192.168.1.101',
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15',
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15',
       },
       {
         userId: '507f1f77bcf86cd799439013',
@@ -83,7 +85,11 @@ async function seedAuditLogs() {
         action: 'update',
         resource: 'users',
         resourceId: '507f1f77bcf86cd799439012',
-        details: { field: 'email', oldValue: 'old@example.com', newValue: 'john.doe@example.com' },
+        details: {
+          field: 'email',
+          oldValue: 'old@example.com',
+          newValue: 'john.doe@example.com',
+        },
         status: 'success' as const,
         ipAddress: '192.168.1.100',
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
@@ -108,7 +114,10 @@ async function seedAuditLogs() {
         action: 'create',
         resource: 'roles',
         resourceId: '507f1f77bcf86cd799439033',
-        details: { name: 'moderator', permissions: ['users.read', 'posts.write'] },
+        details: {
+          name: 'moderator',
+          permissions: ['users.read', 'posts.write'],
+        },
         status: 'success' as const,
         ipAddress: '192.168.1.100',
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
@@ -137,7 +146,8 @@ async function seedAuditLogs() {
         details: { name: 'New ML Project', type: 'classification' },
         status: 'success' as const,
         ipAddress: '192.168.1.101',
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15',
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15',
       },
       {
         userId: '507f1f77bcf86cd799439012',
@@ -149,7 +159,8 @@ async function seedAuditLogs() {
         details: { field: 'status', value: 'active' },
         status: 'success' as const,
         ipAddress: '192.168.1.101',
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15',
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15',
       },
       {
         userId: '507f1f77bcf86cd799439013',
@@ -210,23 +221,31 @@ async function seedAuditLogs() {
       try {
         await auditLogsService.log(log);
         successCount++;
-        console.log(`✓ Created: ${log.action.padEnd(10)} | ${log.resource.padEnd(10)} | ${log.status}`);
+        console.log(
+          `✓ Created: ${log.action.padEnd(10)} | ${log.resource.padEnd(10)} | ${log.status}`,
+        );
       } catch (error) {
         console.error(`✗ Failed to create log: ${error.message}`);
       }
     }
 
-    console.log(`\n✅ Successfully created ${successCount}/${sampleLogs.length} audit logs\n`);
+    console.log(
+      `\n✅ Successfully created ${successCount}/${sampleLogs.length} audit logs\n`,
+    );
 
     // Verify the data
     console.log('📊 Verifying seeded data...\n');
 
-    const { logs, pagination } = await auditLogsService.getAuditLogs({ limit: 5 });
+    const { logs, pagination } = await auditLogsService.getAuditLogs({
+      limit: 5,
+    });
     console.log(`Total logs in database: ${pagination.total}`);
     console.log(`Showing first ${logs.length} logs:\n`);
 
     logs.forEach((log, index) => {
-      console.log(`  ${index + 1}. [${log.status.toUpperCase()}] ${log.userEmail} - ${log.action} ${log.resource}`);
+      console.log(
+        `  ${index + 1}. [${log.status.toUpperCase()}] ${log.userEmail} - ${log.action} ${log.resource}`,
+      );
     });
 
     console.log('\n📈 Fetching statistics...\n');
@@ -234,7 +253,9 @@ async function seedAuditLogs() {
     console.log(`  Total Logs: ${statistics.totalLogs}`);
     console.log(`  Successful: ${statistics.successCount}`);
     console.log(`  Failed: ${statistics.failureCount}`);
-    console.log(`  Success Rate: ${((statistics.successCount / statistics.totalLogs) * 100).toFixed(1)}%`);
+    console.log(
+      `  Success Rate: ${((statistics.successCount / statistics.totalLogs) * 100).toFixed(1)}%`,
+    );
 
     console.log('\n  By Action:');
     Object.entries(statistics.byAction).forEach(([action, count]) => {
@@ -247,7 +268,9 @@ async function seedAuditLogs() {
     });
 
     console.log('\n🎉 Seed script completed successfully!');
-    console.log('💡 You can now view the audit logs at: http://localhost:3000/dashboard/activity\n');
+    console.log(
+      '💡 You can now view the audit logs at: http://localhost:3000/dashboard/activity\n',
+    );
   } catch (error) {
     console.error('❌ Error during seeding:', error.message);
     console.error(error.stack);

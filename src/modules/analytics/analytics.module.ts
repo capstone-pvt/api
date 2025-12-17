@@ -3,10 +3,22 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AnalyticsController } from './analytics.controller';
 import { AnalyticsService } from './analytics.service';
 import { User, UserSchema } from '../users/schemas/user.schema';
-import { Personnel, PersonnelSchema } from '../personnel/schemas/personnel.schema';
-import { Department, DepartmentSchema } from '../departments/schemas/department.schema';
-import { PerformanceEvaluation, PerformanceEvaluationSchema } from '../performance-evaluations/schemas/performance-evaluation.schema';
-import { AuditLog, AuditLogSchema } from '../audit-logs/schemas/audit-log.schema';
+import {
+  Personnel,
+  PersonnelSchema,
+} from '../personnel/schemas/personnel.schema';
+import {
+  Department,
+  DepartmentSchema,
+} from '../departments/schemas/department.schema';
+import {
+  PerformanceEvaluation,
+  PerformanceEvaluationSchema,
+} from '../performance-evaluations/schemas/performance-evaluation.schema';
+import {
+  AuditLog,
+  AuditLogSchema,
+} from '../audit-logs/schemas/audit-log.schema';
 
 @Module({
   imports: [

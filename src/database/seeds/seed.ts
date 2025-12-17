@@ -98,7 +98,7 @@ async function seed() {
 
     // Seed Default Super Admin User
     logger.log('Seeding default super admin user...');
-    const adminEmail = 'sysadmin';
+    const adminEmail = 'sysadmin@gmail.com';
     const existingAdmin = await usersService.findByEmail(adminEmail);
     const defaultPassword = 'P@ssw0rd123';
     if (!existingAdmin) {

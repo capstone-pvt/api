@@ -11,9 +11,12 @@ import { AuditLog } from '../audit-logs/schemas/audit-log.schema';
 export class AnalyticsService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
-    @InjectModel(Personnel.name) private readonly personnelModel: Model<Personnel>,
-    @InjectModel(Department.name) private readonly departmentModel: Model<Department>,
-    @InjectModel(PerformanceEvaluation.name) private readonly performanceEvaluationModel: Model<PerformanceEvaluation>,
+    @InjectModel(Personnel.name)
+    private readonly personnelModel: Model<Personnel>,
+    @InjectModel(Department.name)
+    private readonly departmentModel: Model<Department>,
+    @InjectModel(PerformanceEvaluation.name)
+    private readonly performanceEvaluationModel: Model<PerformanceEvaluation>,
     @InjectModel(AuditLog.name) private readonly auditLogModel: Model<AuditLog>,
   ) {}
 
@@ -24,12 +27,21 @@ export class AnalyticsService {
     const totalUsers = this.userModel.countDocuments();
     const totalPersonnel = this.personnelModel.countDocuments();
     const totalDepartments = this.departmentModel.countDocuments();
-    const evaluationsThisMonth = this.performanceEvaluationModel.countDocuments({
-      createdAt: { $gte: thirtyDaysAgo },
-    });
+    const evaluationsThisMonth = this.performanceEvaluationModel.countDocuments(
+      {
+        createdAt: { $gte: thirtyDaysAgo },
+      },
+    );
 
     const personnelByDepartment = this.personnelModel.aggregate([
-      { $lookup: { from: 'departments', localField: 'department', foreignField: '_id', as: 'departmentInfo' } },
+      {
+        $lookup: {
+          from: 'departments',
+          localField: 'department',
+          foreignField: '_id',
+          as: 'departmentInfo',
+        },
+      },
       { $unwind: '$departmentInfo' },
       { $group: { _id: '$departmentInfo.name', count: { $sum: 1 } } },
       { $project: { name: '$_id', count: 1, _id: 0 } },
@@ -48,7 +60,11 @@ export class AnalyticsService {
     ]);
 
     // --- Correcting the populate path from 'user' to 'userId' ---
-    const recentActivities = this.auditLogModel.find().sort({ timestamp: -1 }).limit(5).populate('userId', 'email');
+    const recentActivities = this.auditLogModel
+      .find()
+      .sort({ timestamp: -1 })
+      .limit(5)
+      .populate('userId', 'email');
 
     const [
       users,

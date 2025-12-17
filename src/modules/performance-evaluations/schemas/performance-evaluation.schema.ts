@@ -19,7 +19,11 @@ const ScoresSchema = SchemaFactory.createForClass(Scores);
 
 @Schema({ timestamps: true })
 export class PerformanceEvaluation {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Personnel', required: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'Personnel',
+    required: true,
+  })
   personnel: Personnel;
 
   @Prop({ required: true })
@@ -38,4 +42,6 @@ export class PerformanceEvaluation {
   evaluatedBy: string;
 }
 
-export const PerformanceEvaluationSchema = SchemaFactory.createForClass(PerformanceEvaluation);
+export const PerformanceEvaluationSchema = SchemaFactory.createForClass(
+  PerformanceEvaluation,
+);

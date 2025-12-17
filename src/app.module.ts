@@ -32,7 +32,9 @@ import * as Joi from 'joi';
       isGlobal: true,
       load: [databaseConfig, jwtConfig, appConfig],
       validationSchema: Joi.object({
-        NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+        NODE_ENV: Joi.string()
+          .valid('development', 'production', 'test')
+          .default('development'),
         PORT: Joi.number().default(5000),
         MONGODB_URI: Joi.string().required(),
         JWT_SECRET: Joi.string().required().min(32),
@@ -51,7 +53,11 @@ import * as Joi from 'joi';
       }),
       inject: [ConfigService],
     }),
-    ThrottlerModule.forRoot([{ name: 'short', ttl: 1000, limit: 10 }, { name: 'medium', ttl: 10000, limit: 50 }, { name: 'long', ttl: 60000, limit: 100 }]),
+    ThrottlerModule.forRoot([
+      { name: 'short', ttl: 1000, limit: 10 },
+      { name: 'medium', ttl: 10000, limit: 50 },
+      { name: 'long', ttl: 60000, limit: 100 },
+    ]),
     ScheduleModule.forRoot(),
     PermissionsModule,
     RolesModule,

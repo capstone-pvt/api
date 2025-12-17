@@ -1,25 +1,53 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import * as xlsx from 'xlsx';
+import * as tf from '@tensorflow/tfjs';
 import { PersonnelService } from '../personnel/personnel.service';
 import { PerformanceEvaluationsService } from '../performance-evaluations/performance-evaluations.service';
 import { InjectModel } from '@nestjs/mongoose';
-import { PerformanceEvaluation, PerformanceEvaluationDocument } from '../performance-evaluations/schemas/performance-evaluation.schema';
+import {
+  PerformanceEvaluation,
+  PerformanceEvaluationDocument,
+} from '../performance-evaluations/schemas/performance-evaluation.schema';
 import { Model } from 'mongoose';
+import {
+  FEATURES,
+  TARGET,
+  METRIC_FAILURE_THRESHOLD,
+  DataNormalizer,
+  createPerformanceModel,
+  prepareTrainingData,
+  trainModel,
+  predict,
+  evaluateModel,
+  TrainingHistory,
+  ModelMetrics,
+  saveModel,
+  loadModel,
+  modelExists,
+} from './tensorflow-model';
 
-let trainedModel: {
-  predict: (features: Record<string, number>) => number;
+let tensorflowModel: {
+  model: tf.LayersModel;
+  normalizer: DataNormalizer;
   trainedAt: Date;
+  trainingHistory: TrainingHistory;
+  metrics: ModelMetrics;
 } | null = null;
-
-const FEATURES = ['PAA', 'KSM', 'TS', 'CM', 'AL', 'GO'];
-const TARGET = 'GEN AVG';
-const METRIC_FAILURE_THRESHOLD = 3.0;
 
 export interface PredictionResponse {
   prediction: number;
   trainedAt: Date;
   failedMetrics: string[];
+  modelMetrics?: ModelMetrics;
+}
+
+export interface TrainingResponse {
+  message: string;
+  records: number;
+  trainingHistory: TrainingHistory;
+  metrics: ModelMetrics;
+  trainedAt: Date;
 }
 
 @Injectable()
@@ -29,10 +57,34 @@ export class MlService {
     private readonly performanceEvaluationsService: PerformanceEvaluationsService,
     @InjectModel(PerformanceEvaluation.name)
     private readonly performanceEvaluationModel: Model<PerformanceEvaluationDocument>,
-  ) {}
+  ) {
+    this.initializeModel();
+  }
+
+  /**
+   * Initialize the model by loading from disk if available
+   */
+  private async initializeModel() {
+    try {
+      if (modelExists()) {
+        console.log('Loading existing TensorFlow model...');
+        const loadedModel = await loadModel();
+        if (loadedModel) {
+          tensorflowModel = loadedModel;
+          console.log('TensorFlow model loaded successfully');
+        }
+      } else {
+        console.log(
+          'No existing model found. Train a new model to get started.',
+        );
+      }
+    } catch (error) {
+      console.error('Error initializing model:', error);
+    }
+  }
 
   @Cron('0 0 * * *')
-  async handleCron() {
+  handleCron() {
     console.log('Scheduled task: Checking for model updates...');
   }
 
@@ -56,7 +108,18 @@ export class MlService {
       {
         $group: {
           _id: '$semester',
-          avgScore: { $avg: { $avg: ['$scores.PAA', '$scores.KSM', '$scores.TS', '$scores.CM', '$scores.AL', '$scores.GO'] } },
+          avgScore: {
+            $avg: {
+              $avg: [
+                '$scores.PAA',
+                '$scores.KSM',
+                '$scores.TS',
+                '$scores.CM',
+                '$scores.AL',
+                '$scores.GO',
+              ],
+            },
+          },
         },
       },
       { $sort: { _id: 1 } },
@@ -68,66 +131,152 @@ export class MlService {
     };
   }
 
-  async trainModelFromFile(fileBuffer: Buffer): Promise<{ message: string; records: number }> {
+  async trainModelFromFile(fileBuffer: Buffer): Promise<TrainingResponse> {
+    console.log('Starting TensorFlow model training...');
+
     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(worksheet) as Record<string, number>[];
+    const data = xlsx.utils.sheet_to_json(worksheet);
 
-    const { weights, intercept } = this.simpleLinearRegression(data);
+    if (data.length === 0) {
+      throw new Error('No data found in the uploaded file');
+    }
 
-    trainedModel = {
-      predict: (features: Record<string, number>): number => {
-        const prediction =
-          intercept +
-          FEATURES.reduce((acc, feat) => acc + (weights[feat] || 0) * (features[feat] || 0), 0);
-        return prediction;
-      },
-      trainedAt: new Date(),
+    // Prepare training data
+    const trainingData = prepareTrainingData(data);
+
+    // Split data for validation (80-20 split)
+    const splitIndex = Math.floor(trainingData.features.length * 0.8);
+    const trainFeatures = trainingData.features.slice(0, splitIndex);
+    const trainTargets = trainingData.targets.slice(0, splitIndex);
+    const testFeatures = trainingData.features.slice(splitIndex);
+    const testTargets = trainingData.targets.slice(splitIndex);
+
+    // Dispose of previous model if it exists
+    if (tensorflowModel?.model) {
+      tensorflowModel.model.dispose();
+    }
+
+    // Create new model and normalizer
+    const model = createPerformanceModel(FEATURES.length);
+    const normalizer = new DataNormalizer();
+
+    console.log(
+      `Training on ${trainFeatures.length} samples, validating on ${testFeatures.length} samples`,
+    );
+
+    // Train the model
+    const history = await trainModel(
+      model,
+      normalizer,
+      { features: trainFeatures, targets: trainTargets },
+      100, // epochs
+      0.2, // validation split
+    );
+
+    // Evaluate on test set
+    const metrics = await evaluateModel(model, normalizer, {
+      features: testFeatures,
+      targets: testTargets,
+    });
+
+    console.log('Model training completed!');
+    console.log(
+      `Test Metrics - Loss: ${metrics.loss.toFixed(4)}, MAE: ${metrics.mae.toFixed(4)}, MSE: ${metrics.mse.toFixed(4)}`,
+    );
+
+    // Store the trained model
+    const trainedAt = new Date();
+    tensorflowModel = {
+      model,
+      normalizer,
+      trainedAt,
+      trainingHistory: history,
+      metrics,
     };
 
-    console.log('Model trained with weights:', weights, 'and intercept:', intercept);
+    // Save the model to disk
+    try {
+      await saveModel(model, normalizer, history, metrics);
+      console.log('Model saved to disk successfully');
+    } catch (error) {
+      console.error('Error saving model to disk:', error);
+      // Continue even if save fails
+    }
 
     return {
-      message: 'Model trained successfully from file.',
+      message: 'TensorFlow model trained successfully from file.',
       records: data.length,
+      trainingHistory: history,
+      metrics,
+      trainedAt,
     };
   }
 
   async predictPerformance(personnelId: string): Promise<PredictionResponse> {
-    if (!trainedModel) {
-      throw new NotFoundException('Model not trained yet. Please upload a training file.');
+    if (!tensorflowModel) {
+      throw new NotFoundException(
+        'TensorFlow model not trained yet. Please upload a training file.',
+      );
     }
 
-    const latestEvaluation = await this.performanceEvaluationsService.findLatestByPersonnelId(personnelId);
+    const latestEvaluation =
+      await this.performanceEvaluationsService.findLatestByPersonnelId(
+        personnelId,
+      );
     if (!latestEvaluation) {
-      throw new NotFoundException('No performance evaluation found for this person. Please add an evaluation first.');
+      throw new NotFoundException(
+        'No performance evaluation found for this person. Please add an evaluation first.',
+      );
     }
 
-    const features = latestEvaluation.scores;
-    const prediction = trainedModel.predict(features as unknown as Record<string, number>);
+    const features = latestEvaluation.scores as unknown as Record<
+      string,
+      number
+    >;
+    const prediction = await predict(
+      tensorflowModel.model,
+      tensorflowModel.normalizer,
+      features,
+    );
     const roundedPrediction = Number.parseFloat(prediction.toFixed(2));
 
-    const failedMetrics = FEATURES.filter(feat => (features as any)[feat] < METRIC_FAILURE_THRESHOLD);
+    const failedMetrics = FEATURES.filter(
+      (feat) => features[feat] < METRIC_FAILURE_THRESHOLD,
+    );
 
     await this.personnelService.update(personnelId, {
       predictedPerformance: roundedPrediction.toString(),
     });
 
-    return { prediction: roundedPrediction, trainedAt: trainedModel.trainedAt, failedMetrics };
+    return {
+      prediction: roundedPrediction,
+      trainedAt: tensorflowModel.trainedAt,
+      failedMetrics,
+      modelMetrics: tensorflowModel.metrics,
+    };
   }
 
   async predictManual(
     metrics: Record<string, number>,
     personnelId?: string,
   ): Promise<PredictionResponse> {
-    if (!trainedModel) {
-      throw new NotFoundException('Model not trained yet. Please upload a training file.');
+    if (!tensorflowModel) {
+      throw new NotFoundException(
+        'TensorFlow model not trained yet. Please upload a training file.',
+      );
     }
 
-    const prediction = trainedModel.predict(metrics);
+    const prediction = await predict(
+      tensorflowModel.model,
+      tensorflowModel.normalizer,
+      metrics,
+    );
     const roundedPrediction = Number.parseFloat(prediction.toFixed(2));
-    const failedMetrics = FEATURES.filter(feat => metrics[feat] < METRIC_FAILURE_THRESHOLD);
+    const failedMetrics = FEATURES.filter(
+      (feat) => metrics[feat] < METRIC_FAILURE_THRESHOLD,
+    );
 
     if (personnelId) {
       await this.personnelService.update(personnelId, {
@@ -135,23 +284,38 @@ export class MlService {
       });
     }
 
-    return { prediction: roundedPrediction, trainedAt: trainedModel.trainedAt, failedMetrics };
+    return {
+      prediction: roundedPrediction,
+      trainedAt: tensorflowModel.trainedAt,
+      failedMetrics,
+      modelMetrics: tensorflowModel.metrics,
+    };
   }
 
-  private simpleLinearRegression(data: Record<string, number>[]): { weights: Record<string, number>; intercept: number } {
-    const avgTarget = data.reduce((sum, row) => sum + row[TARGET], 0) / data.length;
-    const avgFeatures = FEATURES.reduce((acc, feat) => {
-      acc[feat] = data.reduce((sum, row) => sum + row[feat], 0) / data.length;
-      return acc;
-    }, {} as Record<string, number>);
+  /**
+   * Get training history and model metrics
+   */
+  getModelInfo() {
+    if (!tensorflowModel) {
+      throw new NotFoundException('TensorFlow model not trained yet.');
+    }
 
-    const weights = FEATURES.reduce((acc, feat) => {
-      acc[feat] = (avgFeatures[feat] / avgTarget) * 0.15;
-      return acc;
-    }, {} as Record<string, number>);
+    return {
+      trainedAt: tensorflowModel.trainedAt,
+      trainingHistory: tensorflowModel.trainingHistory,
+      metrics: tensorflowModel.metrics,
+      modelSummary: {
+        inputFeatures: FEATURES,
+        targetVariable: TARGET,
+        architecture: 'Neural Network (32-16-8-1)',
+      },
+    };
+  }
 
-    const intercept = 0.1;
-
-    return { weights, intercept };
+  /**
+   * Check if the model is trained
+   */
+  isModelTrained(): boolean {
+    return tensorflowModel !== null;
   }
 }

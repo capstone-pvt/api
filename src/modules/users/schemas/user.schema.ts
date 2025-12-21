@@ -52,6 +52,9 @@ export class User {
   @Prop()
   lastLoginIp?: string;
 
+  @Prop()
+  currentSessionId?: string;
+
   createdAt: Date;
   updatedAt: Date;
 

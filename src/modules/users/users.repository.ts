@@ -155,6 +155,12 @@ export class UsersRepository {
     });
   }
 
+  async updateCurrentSessionId(id: string, sessionId: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(id, {
+      currentSessionId: sessionId,
+    });
+  }
+
   async count(filters: UserFiltersDto = {}): Promise<number> {
     const query: FilterQuery<UserDocument> = {};
 

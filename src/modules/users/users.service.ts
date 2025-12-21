@@ -54,6 +54,13 @@ export class UsersService {
     return this.usersRepository.updateLastLogin(id, ip);
   }
 
+  async updateCurrentSessionId(
+    id: string,
+    sessionId: string,
+  ): Promise<void> {
+    return this.usersRepository.updateCurrentSessionId(id, sessionId);
+  }
+
   async count(filters: UserFiltersDto): Promise<number> {
     return this.usersRepository.count(filters);
   }

@@ -160,17 +160,32 @@ export class AuthService {
       expiresIn: refreshExpiration,
     } as any);
 
-    // Create session
+    // Create session (this will invalidate all previous sessions)
     const expiresAt = new Date(
       Date.now() + (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000,
     );
 
-    await this.sessionsService.createSession({
+    const session = await this.sessionsService.createSession({
       userId: user._id,
       refreshToken,
       deviceInfo,
       expiresAt,
     });
+
+    // Update user's current session ID
+    await this.usersService.updateCurrentSessionId(
+      user._id.toString(),
+      session.sessionId,
+    );
+
+    // Update JWT payload to include sessionId
+    const accessTokenWithSession = this.jwtService.sign(
+      { ...payload, sessionId: session.sessionId },
+      {
+        secret: jwtSecret,
+        expiresIn: jwtExpiration,
+      } as any,
+    );
 
     this.logger.log(
       'info',
@@ -182,10 +197,11 @@ export class AuthService {
         browser: deviceInfo.browser,
         os: deviceInfo.os,
         rememberMe: credentials.rememberMe,
+        sessionId: session.sessionId,
       },
     );
 
-    return { user, accessToken, refreshToken };
+    return { user, accessToken: accessTokenWithSession, refreshToken };
   }
 
   async refreshAccessToken(refreshToken: string): Promise<{
@@ -229,10 +245,14 @@ export class AuthService {
     const jwtExpiration =
       this.configService.get<string>('jwt.accessTokenExpiration') || '15m';
 
-    const accessToken = this.jwtService.sign(jwtPayload, {
-      secret: jwtSecret,
-      expiresIn: jwtExpiration,
-    } as any);
+    // Include current sessionId in the token
+    const accessToken = this.jwtService.sign(
+      { ...jwtPayload, sessionId: user.currentSessionId },
+      {
+        secret: jwtSecret,
+        expiresIn: jwtExpiration,
+      } as any,
+    );
 
     return { user, accessToken };
   }

@@ -34,6 +34,14 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('User not found or inactive');
     }
 
+    // Validate session - check if sessionId in token matches current session
+    const sessionId = (payload as any).sessionId;
+    if (sessionId && user.currentSessionId !== sessionId) {
+      throw new UnauthorizedException(
+        'Session expired. You have been logged in from another device.',
+      );
+    }
+
     // Populate roles and permissions
     await user.populate({
       path: 'roles',

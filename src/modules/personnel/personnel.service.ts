@@ -9,12 +9,18 @@ import {
   SkippedPersonnelRecord,
   FailedPersonnelRecord,
 } from './dto/bulk-upload-response.dto';
+import {
+  PerformanceEvaluation,
+  PerformanceEvaluationDocument,
+} from '../performance-evaluations/schemas/performance-evaluation.schema';
 
 @Injectable()
 export class PersonnelService {
   constructor(
     @InjectModel(Personnel.name)
     private readonly personnelModel: Model<PersonnelDocument>,
+    @InjectModel(PerformanceEvaluation.name)
+    private readonly performanceEvaluationModel: Model<PerformanceEvaluationDocument>,
   ) {}
 
   async create(createPersonnelDto: CreatePersonnelDto): Promise<Personnel> {
@@ -40,6 +46,10 @@ export class PersonnelService {
   }
 
   async remove(id: string): Promise<Personnel | null> {
+    // First, delete all performance evaluations for this personnel
+    await this.performanceEvaluationModel.deleteMany({ personnel: id }).exec();
+
+    // Then delete the personnel record
     return this.personnelModel.findByIdAndDelete(id).exec();
   }
 

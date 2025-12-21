@@ -93,6 +93,13 @@ export class PerformanceEvaluationsService {
     return this.performanceEvaluationModel.findByIdAndDelete(id).exec();
   }
 
+  async deleteByPersonnelId(personnelId: string): Promise<{ deletedCount: number }> {
+    const result = await this.performanceEvaluationModel
+      .deleteMany({ personnel: personnelId })
+      .exec();
+    return { deletedCount: result.deletedCount || 0 };
+  }
+
   /**
    * Bulk upload personnel and evaluations from Excel file
    */

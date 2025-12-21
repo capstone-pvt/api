@@ -365,4 +365,48 @@ export class MlService {
 
     return { exists: false };
   }
+
+  /**
+   * Get accuracy trends from training history
+   * Converts training loss/MSE into accuracy percentage trends
+   */
+  getAccuracyTrends(): Array<{ date: string; accuracy: number; count?: number }> {
+    if (!tensorflowModel || !tensorflowModel.trainingHistory) {
+      return [];
+    }
+
+    const history = tensorflowModel.trainingHistory;
+    const trainedAt = tensorflowModel.trainedAt;
+
+    // Convert epochs to dates (distributed across training time)
+    // Assuming training happened on trainedAt date
+    const baseDate = new Date(trainedAt);
+
+    // Calculate accuracy from validation loss (lower loss = higher accuracy)
+    // Using formula: accuracy = 1 / (1 + valLoss) * 100
+    // This gives us a percentage where lower error = higher accuracy
+    const trends = history.epoch.map((epoch, index) => {
+      // Create date for each epoch (spread across training period)
+      const epochDate = new Date(baseDate);
+      epochDate.setMinutes(
+        epochDate.getMinutes() - (history.epoch.length - epoch - 1) * 5,
+      );
+
+      // Calculate accuracy from validation loss or regular loss
+      const loss = history.valLoss?.[index] ?? history.loss[index];
+
+      // Convert loss to accuracy percentage
+      // Lower loss = higher accuracy
+      // Using: accuracy = (1 / (1 + loss)) * 100
+      const accuracy = (1 / (1 + loss)) * 100;
+
+      return {
+        date: epochDate.toISOString(),
+        accuracy: Number(accuracy.toFixed(2)),
+        count: epoch + 1, // Epoch number as count
+      };
+    });
+
+    return trends;
+  }
 }

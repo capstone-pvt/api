@@ -69,4 +69,9 @@ export class MlController {
   ): Promise<{ exists: boolean; evaluation?: any }> {
     return this.mlService.checkExistingPrediction(personnelId, semester);
   }
+
+  @Get('accuracy-trends')
+  async getAccuracyTrends() {
+    return this.mlService.getAccuracyTrends();
+  }
 }

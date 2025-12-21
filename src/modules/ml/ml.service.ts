@@ -260,7 +260,8 @@ export class MlService {
 
   async predictManual(
     metrics: Record<string, number>,
-    personnelId?: string,
+    personnelId: string,
+    semester: string,
   ): Promise<PredictionResponse> {
     if (!tensorflowModel) {
       throw new NotFoundException(
@@ -278,11 +279,10 @@ export class MlService {
       (feat) => metrics[feat] < METRIC_FAILURE_THRESHOLD,
     );
 
-    if (personnelId) {
-      await this.personnelService.update(personnelId, {
-        predictedPerformance: roundedPrediction.toString(),
-      });
-    }
+    // Update personnel with predicted performance
+    await this.personnelService.update(personnelId, {
+      predictedPerformance: roundedPrediction.toString(),
+    });
 
     return {
       prediction: roundedPrediction,

@@ -34,6 +34,9 @@ export class Setting extends Document {
 
   @Prop({ default: 15 })
   lockoutDuration: number;
+
+  @Prop({ default: 5 })
+  sessionTimeout: number; // Idle timeout in minutes
 }
 
 export const SettingSchema = SchemaFactory.createForClass(Setting);

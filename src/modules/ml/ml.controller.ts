@@ -9,12 +9,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MlService, PredictionResponse, TrainingResponse } from './ml.service';
-
-interface ManualPredictionDto {
-  metrics: Record<string, number>;
-  personnelId?: string;
-  semester?: string;
-}
+import { ManualPredictionDto } from './dto/manual-prediction.dto';
 
 @Controller('ml')
 export class MlController {
@@ -59,6 +54,10 @@ export class MlController {
   async predictManual(
     @Body() payload: ManualPredictionDto,
   ): Promise<PredictionResponse> {
-    return this.mlService.predictManual(payload.metrics, payload.personnelId);
+    return this.mlService.predictManual(
+      payload.metrics,
+      payload.personnelId,
+      payload.semester,
+    );
   }
 }

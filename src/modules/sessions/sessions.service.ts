@@ -48,17 +48,16 @@ export class SessionsService {
     return false;
   }
 
-  async validateSession(
-    userId: string,
-    sessionId: string,
-  ): Promise<boolean> {
+  async validateSession(userId: string, sessionId: string): Promise<boolean> {
     const sessions = await this.sessionsRepository.findByUserId(userId);
     return sessions.some(
       (session) => session.sessionId === sessionId && session.isValid,
     );
   }
 
-  async getSessionBySessionId(sessionId: string): Promise<SessionDocument | null> {
+  async getSessionBySessionId(
+    sessionId: string,
+  ): Promise<SessionDocument | null> {
     const sessions = await this.sessionsRepository.findAllValid();
     return sessions.find((session) => session.sessionId === sessionId) || null;
   }

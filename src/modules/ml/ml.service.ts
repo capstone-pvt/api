@@ -370,7 +370,11 @@ export class MlService {
    * Get accuracy trends from training history
    * Converts training loss/MSE into accuracy percentage trends
    */
-  getAccuracyTrends(): Array<{ date: string; accuracy: number; count?: number }> {
+  getAccuracyTrends(): Array<{
+    date: string;
+    accuracy: number;
+    count?: number;
+  }> {
     if (!tensorflowModel || !tensorflowModel.trainingHistory) {
       return [];
     }

@@ -151,13 +151,27 @@ export class AuthController {
   async me(@GetUser() user: AuthenticatedUser) {
     const fullUser = await this.authService.getUserById(user.userId);
 
+    // Extract all permissions from user's roles
+    const allPermissions = new Set<string>();
+    if (fullUser?.roles) {
+      for (const role of fullUser.roles) {
+        if ((role as any).permissions) {
+          for (const permission of (role as any).permissions) {
+            const permName =
+              typeof permission === 'string' ? permission : permission.name;
+            allPermissions.add(permName);
+          }
+        }
+      }
+    }
+
     return {
       success: true,
       data: {
         user: {
           ...this.sanitizeUser(fullUser),
-          roles: user.roles,
-          permissions: user.permissions,
+          roles: fullUser?.roles || [],
+          permissions: Array.from(allPermissions),
         },
       },
     };

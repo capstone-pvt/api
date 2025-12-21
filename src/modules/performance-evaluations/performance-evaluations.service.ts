@@ -93,7 +93,9 @@ export class PerformanceEvaluationsService {
     return this.performanceEvaluationModel.findByIdAndDelete(id).exec();
   }
 
-  async deleteByPersonnelId(personnelId: string): Promise<{ deletedCount: number }> {
+  async deleteByPersonnelId(
+    personnelId: string,
+  ): Promise<{ deletedCount: number }> {
     const result = await this.performanceEvaluationModel
       .deleteMany({ personnel: personnelId })
       .exec();

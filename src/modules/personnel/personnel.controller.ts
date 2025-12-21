@@ -70,8 +70,8 @@ export class PersonnelController {
       }
 
       // Map Excel data to CreatePersonnelDto
-      const personnelData: CreatePersonnelDto[] = data.map((row: any) => {
-        const dto: any = {
+      const personnelData = data.map((row: any): CreatePersonnelDto => {
+        const dto: Partial<CreatePersonnelDto> = {
           firstName: row['First Name'] || row['firstName'],
           lastName: row['Last Name'] || row['lastName'],
           middleName: row['Middle Name'] || row['middleName'] || '',
@@ -87,7 +87,7 @@ export class PersonnelController {
           dto.hireDate = new Date(hireDateValue);
         }
 
-        return dto;
+        return dto as CreatePersonnelDto;
       });
 
       // Process bulk upload with duplicate checking
@@ -96,9 +96,7 @@ export class PersonnelController {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new BadRequestException(
-        `Failed to process file: ${error.message}`,
-      );
+      throw new BadRequestException(`Failed to process file: ${error.message}`);
     }
   }
 

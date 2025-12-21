@@ -102,7 +102,7 @@ async function seed() {
     const existingAdmin = await usersService.findByEmail(adminEmail);
     const defaultPassword = 'P@ssw0rd123';
     if (!existingAdmin) {
-      const adminUser = await usersService.create({
+      await usersService.create({
         firstName: 'Super',
         lastName: 'Admin',
         email: adminEmail,

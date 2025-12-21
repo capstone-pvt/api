@@ -54,10 +54,7 @@ export class UsersService {
     return this.usersRepository.updateLastLogin(id, ip);
   }
 
-  async updateCurrentSessionId(
-    id: string,
-    sessionId: string,
-  ): Promise<void> {
+  async updateCurrentSessionId(id: string, sessionId: string): Promise<void> {
     return this.usersRepository.updateCurrentSessionId(id, sessionId);
   }
 

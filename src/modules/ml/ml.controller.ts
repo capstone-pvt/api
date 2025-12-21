@@ -6,6 +6,7 @@ import {
   Param,
   Body,
   Get,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MlService, PredictionResponse, TrainingResponse } from './ml.service';
@@ -59,5 +60,13 @@ export class MlController {
       payload.personnelId,
       payload.semester,
     );
+  }
+
+  @Get('check-prediction')
+  async checkExistingPrediction(
+    @Query('personnelId') personnelId: string,
+    @Query('semester') semester: string,
+  ): Promise<{ exists: boolean; evaluation?: any }> {
+    return this.mlService.checkExistingPrediction(personnelId, semester);
   }
 }

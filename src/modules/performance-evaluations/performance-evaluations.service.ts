@@ -60,6 +60,26 @@ export class PerformanceEvaluationsService {
       .exec();
   }
 
+  async findByPersonnelAndSemester(
+    personnelId: string,
+    semester: string,
+  ): Promise<PerformanceEvaluation | null> {
+    return this.performanceEvaluationModel
+      .findOne({ personnel: personnelId, semester })
+      .populate('personnel')
+      .exec();
+  }
+
+  async hasEvaluationForSemester(
+    personnelId: string,
+    semester: string,
+  ): Promise<boolean> {
+    const evaluation = await this.performanceEvaluationModel
+      .findOne({ personnel: personnelId, semester })
+      .exec();
+    return !!evaluation;
+  }
+
   async update(
     id: string,
     updatePerformanceEvaluationDto: UpdatePerformanceEvaluationDto,

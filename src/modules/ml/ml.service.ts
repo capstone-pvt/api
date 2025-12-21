@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import * as xlsx from 'xlsx';
 import * as tf from '@tensorflow/tfjs';
@@ -269,6 +273,19 @@ export class MlService {
       );
     }
 
+    // Check if prediction already exists for this personnel and semester
+    const hasExisting =
+      await this.performanceEvaluationsService.hasEvaluationForSemester(
+        personnelId,
+        semester,
+      );
+
+    if (hasExisting) {
+      throw new BadRequestException(
+        `A prediction already exists for this personnel in ${semester}. Cannot create duplicate predictions for the same semester.`,
+      );
+    }
+
     const prediction = await predict(
       tensorflowModel.model,
       tensorflowModel.normalizer,
@@ -317,5 +334,35 @@ export class MlService {
    */
   isModelTrained(): boolean {
     return tensorflowModel !== null;
+  }
+
+  /**
+   * Check if a personnel already has a prediction for a specific semester
+   */
+  async checkExistingPrediction(
+    personnelId: string,
+    semester: string,
+  ): Promise<{ exists: boolean; evaluation?: any }> {
+    const evaluation =
+      await this.performanceEvaluationsService.findByPersonnelAndSemester(
+        personnelId,
+        semester,
+      );
+
+    if (evaluation) {
+      return {
+        exists: true,
+        evaluation: {
+          _id: (evaluation as any)._id,
+          personnel: evaluation.personnel,
+          semester: evaluation.semester,
+          evaluationDate: evaluation.evaluationDate,
+          scores: evaluation.scores,
+          feedback: evaluation.feedback,
+        },
+      };
+    }
+
+    return { exists: false };
   }
 }

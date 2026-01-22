@@ -11,7 +11,7 @@ import { PermissionsService } from './permissions.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
-import { NotFoundException } from '../../common/filters/http-exception.filter';
+import { NotFoundException } from '@nestjs/common';
 
 @ApiTags('Permissions')
 @ApiBearerAuth('JWT-auth')

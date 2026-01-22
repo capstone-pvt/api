@@ -48,7 +48,7 @@ async function seed() {
         hierarchy: 1,
         permissions: allPermissionIds,
         isSystemRole: true,
-      } as any);
+      });
       logger.log('Created role: Super Admin');
     } else {
       logger.log('Role already exists: Super Admin');
@@ -70,8 +70,8 @@ async function seed() {
     //       'Administrative access to manage users, roles, and content',
     //     hierarchy: 2,
     //     permissions: adminPermissions,
-    //     isSystemRole: true,
-    //   } as any);
+    //
+    //   });
     //   logger.log('Created role: Admin');
     // } else {
     //   logger.log('Role already exists: Admin');
@@ -90,7 +90,7 @@ async function seed() {
     //     hierarchy: 3,
     //     permissions: userPermissions,
     //     isSystemRole: false,
-    //   } as any);
+    //   });
     //   logger.log('Created role: User');
     // } else {
     //   logger.log('Role already exists: User');

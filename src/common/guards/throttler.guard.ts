@@ -37,7 +37,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     );
   }
 
-  protected shouldSkip(_context: ExecutionContext): Promise<boolean> {
+  protected shouldSkip(): Promise<boolean> {
     // Don't skip any routes - they all need rate limiting
     return Promise.resolve(false);
   }

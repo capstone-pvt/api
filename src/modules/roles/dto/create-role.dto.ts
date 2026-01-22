@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsArray,
   IsOptional,
+  IsBoolean,
   Min,
 } from 'class-validator';
 
@@ -28,4 +29,8 @@ export class CreateRoleDto {
   @IsString({ each: true })
   @IsOptional()
   permissions?: string[];
+
+  @IsBoolean()
+  @IsOptional()
+  isSystemRole?: boolean;
 }

@@ -30,6 +30,7 @@ import {
   loadModel,
   modelExists,
 } from './tensorflow-model';
+import { classifyPerformance } from '../personnel/utils/classification.util';
 
 let tensorflowModel: {
   model: tf.LayersModel;
@@ -250,8 +251,11 @@ export class MlService {
       (feat) => features[feat] < METRIC_FAILURE_THRESHOLD,
     );
 
+    const performanceStatus = classifyPerformance(roundedPrediction);
+
     await this.personnelService.update(personnelId, {
       predictedPerformance: roundedPrediction.toString(),
+      performanceStatus,
     });
 
     return {
@@ -296,9 +300,12 @@ export class MlService {
       (feat) => metrics[feat] < METRIC_FAILURE_THRESHOLD,
     );
 
-    // Update personnel with predicted performance
+    const performanceStatus = classifyPerformance(roundedPrediction);
+
+    // Update personnel with predicted performance and classification
     await this.personnelService.update(personnelId, {
       predictedPerformance: roundedPrediction.toString(),
+      performanceStatus,
     });
 
     return {

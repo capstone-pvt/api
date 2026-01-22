@@ -225,7 +225,9 @@ async function seedAuditLogs() {
           `✓ Created: ${log.action.padEnd(10)} | ${log.resource.padEnd(10)} | ${log.status}`,
         );
       } catch (error) {
-        console.error(`✗ Failed to create log: ${error.message}`);
+        console.error(
+          `✗ Failed to create log: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
 
@@ -272,8 +274,11 @@ async function seedAuditLogs() {
       '💡 You can now view the audit logs at: http://localhost:3000/dashboard/activity\n',
     );
   } catch (error) {
-    console.error('❌ Error during seeding:', error.message);
-    console.error(error.stack);
+    console.error(
+      '❌ Error during seeding:',
+      error instanceof Error ? error.message : String(error),
+    );
+    console.error(error instanceof Error ? error.stack : undefined);
     process.exit(1);
   } finally {
     await app.close();

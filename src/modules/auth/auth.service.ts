@@ -6,14 +6,9 @@ import { UsersService } from '../users/users.service';
 import { SessionsService } from '../sessions/sessions.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import {
-  ConflictException,
-  UnauthorizedException,
-} from '../../common/filters/http-exception.filter';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { UserDocument } from '../users/schemas/user.schema';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
-import { Types } from 'mongoose';
-import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
@@ -47,7 +42,7 @@ export class AuthService {
 
     this.logger.log(
       'info',
-      `User registered successfully: ${user.email} (ID: ${user._id})`,
+      `User registered successfully: ${user.email} (ID: ${user._id.toString()})`,
       { context: 'AuthService' },
     );
 
@@ -132,18 +127,15 @@ export class AuthService {
     const payload: JwtPayload = {
       userId: user._id.toString(),
       email: user.email,
-      roles: (user.roles as any[]).map((r) => r.name),
+      roles: (user.roles as unknown as Array<{ name: string }>).map(
+        (r) => r.name,
+      ),
     };
 
     const jwtSecret =
       this.configService.get<string>('jwt.secret') || 'fallback-secret';
     const jwtExpiration =
       this.configService.get<string>('jwt.accessTokenExpiration') || '15m';
-
-    const accessToken = this.jwtService.sign(payload, {
-      secret: jwtSecret,
-      expiresIn: jwtExpiration,
-    } as any);
 
     const rememberMe = credentials.rememberMe || false;
     const refreshSecret =
@@ -189,7 +181,7 @@ export class AuthService {
 
     this.logger.log(
       'info',
-      `User logged in successfully: ${user.email} (ID: ${user._id})`,
+      `User logged in successfully: ${user.email} (ID: ${user._id.toString()})`,
       {
         context: 'AuthService',
         userId: user._id.toString(),
@@ -208,7 +200,7 @@ export class AuthService {
     user: UserDocument;
     accessToken: string;
   }> {
-    let payload: any;
+    let payload: { userId: string };
     try {
       payload = this.jwtService.verify(refreshToken, {
         secret: this.configService.get<string>('jwt.refreshSecret'),
@@ -237,7 +229,9 @@ export class AuthService {
     const jwtPayload: JwtPayload = {
       userId: user._id.toString(),
       email: user.email,
-      roles: (user.roles as any[]).map((r) => r.name),
+      roles: (user.roles as unknown as Array<{ name: string }>).map(
+        (r) => r.name,
+      ),
     };
 
     const jwtSecret =

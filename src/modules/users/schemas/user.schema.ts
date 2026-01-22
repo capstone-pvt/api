@@ -93,14 +93,18 @@ UserSchema.methods.comparePassword = async function (
 
 // Instance method: Check if user has role
 UserSchema.methods.hasRole = async function (
+  this: UserDocument,
   roleName: string,
 ): Promise<boolean> {
   await this.populate('roles');
-  return this.roles.some((role: any) => role.name === roleName);
+  return (this.roles as unknown as Array<{ name: string }>).some(
+    (role) => role.name === roleName,
+  );
 };
 
 // Instance method: Check if user has permission
 UserSchema.methods.hasPermission = async function (
+  this: UserDocument,
   permissionName: string,
 ): Promise<boolean> {
   await this.populate({
@@ -108,10 +112,12 @@ UserSchema.methods.hasPermission = async function (
     populate: { path: 'permissions' },
   });
 
-  for (const role of this.roles as any[]) {
+  for (const role of this.roles as Array<{
+    permissions?: Array<{ name: string }>;
+  }>) {
     if (
       role.permissions &&
-      role.permissions.some((p: any) => p.name === permissionName)
+      role.permissions.some((p) => p.name === permissionName)
     ) {
       return true;
     }

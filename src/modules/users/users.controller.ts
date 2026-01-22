@@ -10,6 +10,9 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -29,11 +32,6 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { GetUser } from '../../common/decorators/get-user.decorator';
-import {
-  NotFoundException,
-  BadRequestException,
-  UnauthorizedException,
-} from '../../common/filters/http-exception.filter';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')

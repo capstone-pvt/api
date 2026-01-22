@@ -66,12 +66,12 @@ export class MlController {
   async checkExistingPrediction(
     @Query('personnelId') personnelId: string,
     @Query('semester') semester: string,
-  ): Promise<{ exists: boolean; evaluation?: any }> {
+  ): Promise<{ exists: boolean; evaluation?: unknown }> {
     return this.mlService.checkExistingPrediction(personnelId, semester);
   }
 
   @Get('accuracy-trends')
-  async getAccuracyTrends() {
+  getAccuracyTrends() {
     return this.mlService.getAccuracyTrends();
   }
 }

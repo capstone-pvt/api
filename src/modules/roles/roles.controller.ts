@@ -28,7 +28,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
-} from '../../common/filters/http-exception.filter';
+} from '@nestjs/common';
 
 @ApiTags('Roles')
 @ApiBearerAuth('JWT-auth')

@@ -6,7 +6,6 @@ import {
   Res,
   Req,
   UseGuards,
-  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,7 +14,7 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
-import { SkipThrottle, Throttle } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import type { Response, Request } from 'express';
 import type { AuthenticatedUser } from '../../common/interfaces/jwt-payload.interface';
 import { AuthService } from './auth.service';
@@ -267,13 +266,16 @@ export class AuthController {
     };
   }
 
-  private sanitizeUser(user: any): any {
+  private sanitizeUser(user: any): Record<string, any> {
+    const userObj = user.toObject
+      ? (user.toObject() as Record<string, any>)
+      : (user as Record<string, any>);
     const {
-      password,
-      passwordResetToken,
-      emailVerificationToken,
+      password: _password,
+      passwordResetToken: _passwordResetToken,
+      emailVerificationToken: _emailVerificationToken,
       ...sanitized
-    } = user.toObject ? user.toObject() : user;
+    } = userObj;
     return sanitized;
   }
 }

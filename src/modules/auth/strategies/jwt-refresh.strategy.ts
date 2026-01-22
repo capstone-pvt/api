@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { SessionsService } from '../../sessions/sessions.service';
 import { JwtRefreshPayload } from '../../../common/interfaces/jwt-payload.interface';
-import { UnauthorizedException } from '../../../common/filters/http-exception.filter';
+import { UnauthorizedException } from '@nestjs/common';
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(
@@ -19,7 +19,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request) => {
-          return request?.cookies?.refreshToken;
+          return (request?.cookies?.refreshToken as string) || null;
         },
       ]),
       secretOrKey:
@@ -30,7 +30,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
   }
 
   async validate(req: Request, payload: JwtRefreshPayload) {
-    const refreshToken = req.cookies?.refreshToken;
+    const refreshToken = req.cookies?.refreshToken as string | undefined;
 
     if (!refreshToken) {
       throw new UnauthorizedException('No refresh token provided');

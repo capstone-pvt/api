@@ -70,25 +70,44 @@ export class PersonnelController {
       }
 
       // Map Excel data to CreatePersonnelDto
-      const personnelData = data.map((row: any): CreatePersonnelDto => {
-        const dto: Partial<CreatePersonnelDto> = {
-          firstName: row['First Name'] || row['firstName'],
-          lastName: row['Last Name'] || row['lastName'],
-          middleName: row['Middle Name'] || row['middleName'] || '',
-          email: row['Email'] || row['email'],
-          department: row['Department ID'] || row['department'],
-          jobTitle: row['Job Title'] || row['jobTitle'] || '',
-          phoneNumber: row['Phone Number'] || row['phoneNumber'] || '',
-          gender: row['Gender'] || row['gender'] || '',
-        };
+      const personnelData = data.map(
+        (row: Record<string, unknown>): CreatePersonnelDto => {
+          const getString = (value: unknown): string =>
+            typeof value === 'string' ? value : '';
 
-        const hireDateValue = row['Hire Date'] || row['hireDate'];
-        if (hireDateValue) {
-          dto.hireDate = new Date(hireDateValue);
-        }
+          const dto: Partial<CreatePersonnelDto> = {
+            firstName:
+              getString(row['First Name']) || getString(row['firstName']),
+            lastName: getString(row['Last Name']) || getString(row['lastName']),
+            middleName:
+              getString(row['Middle Name']) ||
+              getString(row['middleName']) ||
+              '',
+            email: getString(row['Email']) || getString(row['email']),
+            department:
+              getString(row['Department ID']) || getString(row['department']),
+            jobTitle:
+              getString(row['Job Title']) || getString(row['jobTitle']) || '',
+            phoneNumber:
+              getString(row['Phone Number']) ||
+              getString(row['phoneNumber']) ||
+              '',
+            gender: getString(row['Gender']) || getString(row['gender']) || '',
+          };
 
-        return dto as CreatePersonnelDto;
-      });
+          const hireDateValue = row['Hire Date'] || row['hireDate'];
+          if (hireDateValue) {
+            dto.hireDate = new Date(
+              typeof hireDateValue === 'string' ||
+                typeof hireDateValue === 'number'
+                ? hireDateValue
+                : String(hireDateValue),
+            );
+          }
+
+          return dto as CreatePersonnelDto;
+        },
+      );
 
       // Process bulk upload with duplicate checking
       return await this.personnelService.bulkCreate(personnelData);
@@ -96,8 +115,15 @@ export class PersonnelController {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new BadRequestException(`Failed to process file: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to process file: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
+  }
+
+  @Post('classify-all')
+  async classifyAll() {
+    return this.personnelService.classifyAllPersonnel();
   }
 
   @Get('download-template')
@@ -120,7 +146,10 @@ export class PersonnelController {
     const workbook = xlsx.utils.book_new();
     xlsx.utils.book_append_sheet(workbook, worksheet, 'Personnel Template');
 
-    const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    const buffer = xlsx.write(workbook, {
+      type: 'buffer',
+      bookType: 'xlsx',
+    }) as Buffer;
 
     return {
       data: buffer.toString('base64'),

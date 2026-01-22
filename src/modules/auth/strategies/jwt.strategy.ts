@@ -8,7 +8,7 @@ import {
   JwtPayload,
   AuthenticatedUser,
 } from '../../../common/interfaces/jwt-payload.interface';
-import { UnauthorizedException } from '../../../common/filters/http-exception.filter';
+import { UnauthorizedException } from '@nestjs/common';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -19,7 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request) => {
-          return request?.cookies?.accessToken;
+          return (request?.cookies?.accessToken as string) || null;
         },
       ]),
       secretOrKey: configService.get<string>('jwt.secret') || 'fallback-secret',
@@ -35,7 +35,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     }
 
     // Validate session - check if sessionId in token matches current session
-    const sessionId = (payload as any).sessionId;
+    const sessionId = (payload as JwtPayload & { sessionId?: string })
+      .sessionId;
     if (sessionId && user.currentSessionId !== sessionId) {
       throw new UnauthorizedException(
         'Session expired. You have been logged in from another device.',
@@ -50,7 +51,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     // Extract permissions from roles
     const permissions: string[] = [];
-    for (const role of user.roles as any[]) {
+    for (const role of user.roles as unknown as Array<{
+      name: string;
+      permissions?: Array<{ name: string }>;
+    }>) {
       if (role.permissions) {
         for (const permission of role.permissions) {
           permissions.push(permission.name);
@@ -61,7 +65,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     return {
       userId: user._id.toString(),
       email: user.email,
-      roles: (user.roles as any[]).map((r) => r.name),
+      roles: (user.roles as unknown as Array<{ name: string }>).map(
+        (r) => r.name,
+      ),
       permissions,
     };
   }

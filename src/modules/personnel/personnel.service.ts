@@ -13,6 +13,7 @@ import {
   PerformanceEvaluation,
   PerformanceEvaluationDocument,
 } from '../performance-evaluations/schemas/performance-evaluation.schema';
+import { classifyPerformance } from './utils/classification.util';
 
 @Injectable()
 export class PersonnelService {
@@ -94,7 +95,8 @@ export class PersonnelService {
         failedRecords.push({
           row,
           data,
-          error: error.message || 'Unknown error occurred',
+          error:
+            error instanceof Error ? error.message : 'Unknown error occurred',
         });
       }
     }
@@ -107,6 +109,36 @@ export class PersonnelService {
       total: personnelData.length,
       skippedRecords,
       failedRecords,
+    };
+  }
+
+  async classifyAllPersonnel(): Promise<{
+    total: number;
+    classified: number;
+    skipped: number;
+  }> {
+    const allPersonnel = await this.personnelModel.find().exec();
+    let classified = 0;
+    let skipped = 0;
+
+    for (const person of allPersonnel) {
+      if (person.predictedPerformance) {
+        const performanceStatus = classifyPerformance(
+          person.predictedPerformance,
+        );
+        await this.personnelModel
+          .findByIdAndUpdate(person._id, { performanceStatus })
+          .exec();
+        classified++;
+      } else {
+        skipped++;
+      }
+    }
+
+    return {
+      total: allPersonnel.length,
+      classified,
+      skipped,
     };
   }
 }

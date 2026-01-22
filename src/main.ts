@@ -1,7 +1,8 @@
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { NestFactory, Reflector } from '@nestjs/core';
+import type { LoggerService } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
@@ -14,10 +15,10 @@ async function bootstrap() {
   });
 
   // Use Winston logger
-  const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
+  const logger = app.get<LoggerService>(WINSTON_MODULE_NEST_PROVIDER);
   app.useLogger(logger);
 
-  // CORS configuration for frontend on localhost:3000
+  // CORS configuration
   app.enableCors({
     origin: 'http://localhost:3000',
     credentials: true,
@@ -25,13 +26,10 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // Global API prefix
   app.setGlobalPrefix('api');
 
-  // Cookie parser middleware
   app.use(cookieParser());
 
-  // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -43,10 +41,8 @@ async function bootstrap() {
     }),
   );
 
-  // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Global interceptors
   const auditLogsService = app.get(AuditLogsService);
   const reflector = app.get(Reflector);
   app.useGlobalInterceptors(
@@ -54,7 +50,6 @@ async function bootstrap() {
     new AuditLogInterceptor(auditLogsService, reflector),
   );
 
-  // Swagger API Documentation
   const config = new DocumentBuilder()
     .setTitle('RBAC API')
     .setDescription(
@@ -95,4 +90,5 @@ async function bootstrap() {
   logger.log(`📚 Swagger documentation: http://localhost:${port}/api/docs`);
   logger.log(`🌐 CORS enabled for: http://localhost:3000`);
 }
-bootstrap();
+
+void bootstrap();

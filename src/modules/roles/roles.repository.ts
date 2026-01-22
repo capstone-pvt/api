@@ -34,7 +34,7 @@ export class RolesRepository {
   }
 
   async update(id: string, data: UpdateRoleDto): Promise<RoleDocument | null> {
-    const updateData: any = { ...data };
+    const updateData: Record<string, any> = { ...data };
 
     if (data.permissions) {
       updateData.permissions = data.permissions.map(

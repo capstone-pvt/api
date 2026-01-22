@@ -46,4 +46,8 @@ export class CreatePersonnelDto {
   @IsString()
   @IsOptional()
   predictedPerformance?: string;
+
+  @IsString()
+  @IsOptional()
+  performanceStatus?: string;
 }

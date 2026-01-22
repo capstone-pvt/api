@@ -1,39 +1,35 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PERMISSIONS_KEY } from '../decorators/require-permission.decorator';
-import { UnauthorizedException } from '../filters/http-exception.filter';
+import type { Request } from 'express';
+
+interface UserWithPermissions {
+  userId: string;
+  email: string;
+  roles: string[];
+  permissions: string[];
+}
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
-      PERMISSIONS_KEY,
-      [context.getHandler(), context.getClass()],
+    const requiredPermission = this.reflector.get<string>(
+      'permission',
+      context.getHandler(),
     );
 
-    if (!requiredPermissions || requiredPermissions.length === 0) {
+    if (!requiredPermission) {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    const request = context.switchToHttp().getRequest<Request>();
+    const user = request.user as UserWithPermissions | undefined;
 
-    if (!user || !user.permissions) {
-      throw new UnauthorizedException('Access denied');
+    if (!user?.permissions) {
+      return false;
     }
 
-    const hasPermission = requiredPermissions.some((permission) =>
-      user.permissions.includes(permission),
-    );
-
-    if (!hasPermission) {
-      throw new UnauthorizedException(
-        `You need one of these permissions: ${requiredPermissions.join(', ')}`,
-      );
-    }
-
-    return true;
+    return user.permissions.includes(requiredPermission);
   }
 }

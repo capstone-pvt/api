@@ -35,6 +35,9 @@ export class Personnel {
 
   @Prop()
   predictedPerformance: string;
+
+  @Prop({ enum: ['Performing', 'Non-Performing'], default: null })
+  performanceStatus: string;
 }
 
 export const PersonnelSchema = SchemaFactory.createForClass(Personnel);

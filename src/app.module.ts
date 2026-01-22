@@ -17,6 +17,7 @@ import { HealthModule } from './modules/health/health.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { PersonnelModule } from './modules/personnel/personnel.module';
 import { PerformanceEvaluationsModule } from './modules/performance-evaluations/performance-evaluations.module';
+import { NonTeachingEvaluationsModule } from './modules/non-teaching-evaluations/non-teaching-evaluations.module';
 import { MlModule } from './modules/ml/ml.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { CustomThrottlerGuard } from './common/guards/throttler.guard';
@@ -69,6 +70,7 @@ import * as Joi from 'joi';
     DepartmentsModule,
     PersonnelModule,
     PerformanceEvaluationsModule,
+    NonTeachingEvaluationsModule,
     MlModule,
     AnalyticsModule,
   ],

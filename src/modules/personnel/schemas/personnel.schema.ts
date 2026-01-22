@@ -33,6 +33,9 @@ export class Personnel {
   @Prop()
   gender: string;
 
+  @Prop({ enum: ['Teaching', 'Non-Teaching'], default: 'Teaching' })
+  personnelType: string;
+
   @Prop()
   predictedPerformance: string;
 

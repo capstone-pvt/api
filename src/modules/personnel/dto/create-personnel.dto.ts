@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsEmail,
   IsDateString,
+  IsIn,
 } from 'class-validator';
 
 export class CreatePersonnelDto {
@@ -42,6 +43,11 @@ export class CreatePersonnelDto {
   @IsString()
   @IsOptional()
   gender: string;
+
+  @IsString()
+  @IsIn(['Teaching', 'Non-Teaching'])
+  @IsOptional()
+  personnelType?: string;
 
   @IsString()
   @IsOptional()

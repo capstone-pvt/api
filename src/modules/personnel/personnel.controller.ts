@@ -15,11 +15,16 @@ import { PersonnelService } from './personnel.service';
 import { CreatePersonnelDto } from './dto/create-personnel.dto';
 import { UpdatePersonnelDto } from './dto/update-personnel.dto';
 import { BulkUploadPersonnelResponse } from './dto/bulk-upload-response.dto';
+import { CalculateExcellenceDto } from './dto/calculate-excellence.dto';
+import { ExcellenceTrackingService } from './services/excellence-tracking.service';
 import * as xlsx from 'xlsx';
 
 @Controller('personnel')
 export class PersonnelController {
-  constructor(private readonly personnelService: PersonnelService) {}
+  constructor(
+    private readonly personnelService: PersonnelService,
+    private readonly excellenceTrackingService: ExcellenceTrackingService,
+  ) {}
 
   @Post()
   create(@Body() createPersonnelDto: CreatePersonnelDto) {
@@ -155,5 +160,41 @@ export class PersonnelController {
       data: buffer.toString('base64'),
       filename: 'personnel-template.xlsx',
     };
+  }
+
+  // Excellence tracking endpoints
+  @Post(':id/calculate-excellence')
+  async calculateExcellence(
+    @Param('id') id: string,
+    @Body() dto: CalculateExcellenceDto,
+  ) {
+    return this.excellenceTrackingService.calculateExcellenceForPersonnel(
+      id,
+      dto.startYear,
+      dto.endYear,
+      dto.threshold || 4.0,
+    );
+  }
+
+  @Post('calculate-excellence-all')
+  async calculateExcellenceAll(@Body() dto: CalculateExcellenceDto) {
+    return this.excellenceTrackingService.calculateExcellenceForAll(
+      dto.startYear,
+      dto.endYear,
+      dto.threshold || 4.0,
+    );
+  }
+
+  @Get(':id/excellence-history')
+  async getExcellenceHistory(@Param('id') id: string) {
+    return this.excellenceTrackingService.getExcellenceHistory(id);
+  }
+
+  @Post('excellence/analytics')
+  async getExcellenceAnalytics(@Body() dto: CalculateExcellenceDto) {
+    return this.excellenceTrackingService.getExcellenceAnalytics(
+      dto.startYear,
+      dto.endYear,
+    );
   }
 }

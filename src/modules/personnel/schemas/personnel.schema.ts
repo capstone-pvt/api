@@ -41,6 +41,28 @@ export class Personnel {
 
   @Prop({ enum: ['Performing', 'Non-Performing'], default: null })
   performanceStatus: string;
+
+  // Excellence tracking fields (6-year evaluation)
+  @Prop({ enum: ['Excellent', 'Good', 'Average', 'Below Average', 'Not Evaluated'], default: 'Not Evaluated' })
+  excellenceStatus: string;
+
+  @Prop()
+  excellenceStartYear: number;
+
+  @Prop()
+  excellenceEndYear: number;
+
+  @Prop({ default: 4.0 })
+  excellenceThreshold: number;
+
+  @Prop()
+  lastExcellenceCalculation: Date;
+
+  @Prop()
+  sixYearAverage: number;
+
+  @Prop()
+  totalSemestersEvaluated: number;
 }
 
 export const PersonnelSchema = SchemaFactory.createForClass(Personnel);

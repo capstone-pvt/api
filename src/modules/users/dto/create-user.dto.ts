@@ -28,4 +28,8 @@ export class CreateUserDto {
   @IsArray()
   @IsOptional()
   roles?: string[];
+
+  @IsString()
+  @IsOptional()
+  department?: string;
 }

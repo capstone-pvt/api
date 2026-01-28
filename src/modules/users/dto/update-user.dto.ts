@@ -36,4 +36,8 @@ export class UpdateUserDto {
   @IsArray()
   @IsOptional()
   roles?: string[];
+
+  @IsString()
+  @IsOptional()
+  department?: string;
 }

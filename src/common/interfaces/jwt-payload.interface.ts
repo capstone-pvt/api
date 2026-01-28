@@ -13,4 +13,5 @@ export interface AuthenticatedUser {
   email: string;
   roles: string[];
   permissions: string[];
+  department?: string;
 }

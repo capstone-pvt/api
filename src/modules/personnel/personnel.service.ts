@@ -29,8 +29,9 @@ export class PersonnelService {
     return createdPersonnel.save();
   }
 
-  async findAll(): Promise<Personnel[]> {
-    return this.personnelModel.find().populate('department').exec();
+  async findAll(departmentId?: string): Promise<Personnel[]> {
+    const filter = departmentId ? { department: departmentId } : {};
+    return this.personnelModel.find(filter).populate('department').exec();
   }
 
   async findOne(id: string): Promise<Personnel | null> {

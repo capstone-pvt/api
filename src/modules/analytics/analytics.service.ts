@@ -20,20 +20,44 @@ export class AnalyticsService {
     @InjectModel(AuditLog.name) private readonly auditLogModel: Model<AuditLog>,
   ) {}
 
-  async getDashboardAnalytics() {
+  async getDashboardAnalytics(departmentId?: string) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const totalUsers = this.userModel.countDocuments();
-    const totalPersonnel = this.personnelModel.countDocuments();
-    const totalDepartments = this.departmentModel.countDocuments();
-    const evaluationsThisMonth = this.performanceEvaluationModel.countDocuments(
-      {
-        createdAt: { $gte: thirtyDaysAgo },
-      },
-    );
+    // Build filters based on department
+    const personnelFilter = departmentId ? { department: departmentId } : {};
 
-    const personnelByDepartment = this.personnelModel.aggregate([
+    const totalUsers = this.userModel.countDocuments();
+    const totalPersonnel = this.personnelModel.countDocuments(personnelFilter);
+    const totalDepartments = departmentId
+      ? Promise.resolve(1) // Dean can only see their department
+      : this.departmentModel.countDocuments();
+
+    // For evaluations, we need to filter by personnel in the department
+    let evaluationsThisMonth;
+    if (departmentId) {
+      const personnelInDept = await this.personnelModel
+        .find(personnelFilter)
+        .select('_id')
+        .exec();
+      const personnelIds = personnelInDept.map((p) => p._id);
+
+      evaluationsThisMonth = this.performanceEvaluationModel.countDocuments({
+        personnel: { $in: personnelIds },
+        createdAt: { $gte: thirtyDaysAgo },
+      });
+    } else {
+      evaluationsThisMonth = this.performanceEvaluationModel.countDocuments({
+        createdAt: { $gte: thirtyDaysAgo },
+      });
+    }
+
+    // Personnel by department aggregation
+    const personnelByDepartmentPipeline: any[] = [];
+    if (departmentId) {
+      personnelByDepartmentPipeline.push({ $match: personnelFilter });
+    }
+    personnelByDepartmentPipeline.push(
       {
         $lookup: {
           from: 'departments',
@@ -45,7 +69,11 @@ export class AnalyticsService {
       { $unwind: '$departmentInfo' },
       { $group: { _id: '$departmentInfo.name', count: { $sum: 1 } } },
       { $project: { name: '$_id', count: 1, _id: 0 } },
-    ]);
+    );
+
+    const personnelByDepartment = this.personnelModel.aggregate(
+      personnelByDepartmentPipeline,
+    );
 
     const userSignups = this.userModel.aggregate([
       { $match: { createdAt: { $gte: thirtyDaysAgo } } },

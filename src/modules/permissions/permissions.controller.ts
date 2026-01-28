@@ -1,4 +1,14 @@
-import { Controller, Get, Param, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Query,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -6,12 +16,13 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import { PermissionsService } from './permissions.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
-import { NotFoundException } from '@nestjs/common';
+import { CreatePermissionDto } from './dto/create-permission.dto';
 
 @ApiTags('Permissions')
 @ApiBearerAuth('JWT-auth')
@@ -19,6 +30,47 @@ import { NotFoundException } from '@nestjs/common';
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class PermissionsController {
   constructor(private readonly permissionsService: PermissionsService) {}
+
+  @ApiOperation({ summary: 'Create a new permission' })
+  @ApiBody({ type: CreatePermissionDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Permission created successfully',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Permission with this name already exists',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing permissions.manage permission',
+  })
+  @Post()
+  @RequirePermission('permissions.manage')
+  async create(@Body() createPermissionDto: CreatePermissionDto) {
+    // Check if permission with same name already exists
+    const existingPermission = await this.permissionsService.findByName(
+      createPermissionDto.name,
+    );
+
+    if (existingPermission) {
+      throw new ConflictException(
+        `Permission with name "${createPermissionDto.name}" already exists`,
+      );
+    }
+
+    const permission = await this.permissionsService.create(
+      createPermissionDto,
+    );
+
+    return {
+      success: true,
+      message: 'Permission created successfully',
+      data: {
+        permission,
+      },
+    };
+  }
 
   @ApiOperation({
     summary: 'Get all permissions (optionally grouped by category)',

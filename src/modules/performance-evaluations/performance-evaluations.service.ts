@@ -39,7 +39,23 @@ export class PerformanceEvaluationsService {
     return createdPerformanceEvaluation.save();
   }
 
-  async findAll(): Promise<PerformanceEvaluation[]> {
+  async findAll(departmentId?: string): Promise<PerformanceEvaluation[]> {
+    if (departmentId) {
+      // First, get all personnel in the department
+      const personnelInDept = await this.personnelModel
+        .find({ department: departmentId })
+        .select('_id')
+        .exec();
+
+      const personnelIds = personnelInDept.map((p) => p._id);
+
+      // Then find evaluations for those personnel
+      return this.performanceEvaluationModel
+        .find({ personnel: { $in: personnelIds } })
+        .populate('personnel')
+        .exec();
+    }
+
     return this.performanceEvaluationModel.find().populate('personnel').exec();
   }
 

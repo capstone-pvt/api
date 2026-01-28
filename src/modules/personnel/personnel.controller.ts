@@ -17,6 +17,8 @@ import { UpdatePersonnelDto } from './dto/update-personnel.dto';
 import { BulkUploadPersonnelResponse } from './dto/bulk-upload-response.dto';
 import { CalculateExcellenceDto } from './dto/calculate-excellence.dto';
 import { ExcellenceTrackingService } from './services/excellence-tracking.service';
+import { GetUser } from '../../common/decorators/get-user.decorator';
+import { AuthenticatedUser } from '../../common/interfaces/jwt-payload.interface';
 import * as xlsx from 'xlsx';
 
 @Controller('personnel')
@@ -32,8 +34,14 @@ export class PersonnelController {
   }
 
   @Get()
-  findAll() {
-    return this.personnelService.findAll();
+  findAll(@GetUser() user: AuthenticatedUser) {
+    // Check if user has dean role
+    const isDean = user.roles.includes('dean');
+
+    // If dean, filter by their department
+    const departmentFilter = isDean && user.department ? user.department : undefined;
+
+    return this.personnelService.findAll(departmentFilter);
   }
 
   @Get(':id')

@@ -16,6 +16,8 @@ import { PerformanceEvaluationsService } from './performance-evaluations.service
 import { CreatePerformanceEvaluationDto } from './dto/create-performance-evaluation.dto';
 import { UpdatePerformanceEvaluationDto } from './dto/update-performance-evaluation.dto';
 import { BulkUploadResult } from './dto/bulk-upload-response.dto';
+import { GetUser } from '../../common/decorators/get-user.decorator';
+import { AuthenticatedUser } from '../../common/interfaces/jwt-payload.interface';
 
 @Controller('performance-evaluations')
 export class PerformanceEvaluationsController {
@@ -33,8 +35,14 @@ export class PerformanceEvaluationsController {
   }
 
   @Get()
-  findAll() {
-    return this.performanceEvaluationsService.findAll();
+  findAll(@GetUser() user: AuthenticatedUser) {
+    // Check if user has dean role
+    const isDean = user.roles.includes('dean');
+
+    // If dean, filter by their department
+    const departmentFilter = isDean && user.department ? user.department : undefined;
+
+    return this.performanceEvaluationsService.findAll(departmentFilter);
   }
 
   @Get('download-template')

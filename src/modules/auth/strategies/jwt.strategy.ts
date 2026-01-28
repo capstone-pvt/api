@@ -69,6 +69,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         (r) => r.name,
       ),
       permissions,
+      department: user.department?.toString(),
     };
   }
 }

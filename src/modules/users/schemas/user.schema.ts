@@ -46,6 +46,9 @@ export class User {
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Role' }] })
   roles: Types.ObjectId[];
 
+  @Prop({ type: Types.ObjectId, ref: 'Department' })
+  department?: Types.ObjectId;
+
   @Prop()
   lastLoginAt?: Date;
 

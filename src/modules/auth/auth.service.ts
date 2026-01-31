@@ -132,15 +132,18 @@ export class AuthService {
       ),
     };
 
-    const jwtSecret =
-      this.configService.get<string>('jwt.secret') || 'fallback-secret';
+    const jwtSecret = this.configService.get<string>('jwt.secret');
+    if (!jwtSecret) {
+      throw new Error('JWT secret is not configured');
+    }
     const jwtExpiration =
       this.configService.get<string>('jwt.accessTokenExpiration') || '15m';
 
     const rememberMe = credentials.rememberMe || false;
-    const refreshSecret =
-      this.configService.get<string>('jwt.refreshSecret') ||
-      'fallback-refresh-secret';
+    const refreshSecret = this.configService.get<string>('jwt.refreshSecret');
+    if (!refreshSecret) {
+      throw new Error('JWT refresh secret is not configured');
+    }
     const refreshExpiration = rememberMe
       ? this.configService.get<string>('jwt.refreshTokenExpirationLong') ||
         '30d'
@@ -201,9 +204,14 @@ export class AuthService {
     accessToken: string;
   }> {
     let payload: { userId: string };
+    const refreshSecret = this.configService.get<string>('jwt.refreshSecret');
+    if (!refreshSecret) {
+      throw new Error('JWT refresh secret is not configured');
+    }
+
     try {
       payload = this.jwtService.verify(refreshToken, {
-        secret: this.configService.get<string>('jwt.refreshSecret'),
+        secret: refreshSecret,
       });
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
@@ -234,8 +242,10 @@ export class AuthService {
       ),
     };
 
-    const jwtSecret =
-      this.configService.get<string>('jwt.secret') || 'fallback-secret';
+    const jwtSecret = this.configService.get<string>('jwt.secret');
+    if (!jwtSecret) {
+      throw new Error('JWT secret is not configured');
+    }
     const jwtExpiration =
       this.configService.get<string>('jwt.accessTokenExpiration') || '15m';
 

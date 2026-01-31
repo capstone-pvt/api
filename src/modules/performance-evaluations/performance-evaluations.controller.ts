@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
   UseInterceptors,
   UploadedFile,
   Res,
@@ -17,8 +18,11 @@ import { CreatePerformanceEvaluationDto } from './dto/create-performance-evaluat
 import { UpdatePerformanceEvaluationDto } from './dto/update-performance-evaluation.dto';
 import { BulkUploadResult } from './dto/bulk-upload-response.dto';
 import { GetUser } from '../../common/decorators/get-user.decorator';
-import { AuthenticatedUser } from '../../common/interfaces/jwt-payload.interface';
+import type { AuthenticatedUser } from '../../common/interfaces/jwt-payload.interface';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { ParseMongoIdPipe } from '../../common/pipes/parse-mongo-id.pipe';
 
+@UseGuards(JwtAuthGuard)
 @Controller('performance-evaluations')
 export class PerformanceEvaluationsController {
   constructor(
@@ -62,13 +66,13 @@ export class PerformanceEvaluationsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseMongoIdPipe) id: string) {
     return this.performanceEvaluationsService.findOne(id);
   }
 
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseMongoIdPipe) id: string,
     @Body() updatePerformanceEvaluationDto: UpdatePerformanceEvaluationDto,
   ) {
     return this.performanceEvaluationsService.update(
@@ -78,7 +82,7 @@ export class PerformanceEvaluationsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseMongoIdPipe) id: string) {
     return this.performanceEvaluationsService.remove(id);
   }
 

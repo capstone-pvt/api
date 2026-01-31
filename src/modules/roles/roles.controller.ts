@@ -24,6 +24,9 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { GetUser } from '../../common/decorators/get-user.decorator';
+import type { AuthenticatedUser } from '../../common/interfaces/jwt-payload.interface';
+import { ParseMongoIdPipe } from '../../common/pipes/parse-mongo-id.pipe';
 import {
   NotFoundException,
   ConflictException,
@@ -98,7 +101,7 @@ export class RolesController {
   })
   @Get(':id')
   @RequirePermission('roles.read')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseMongoIdPipe) id: string) {
     const role = await this.rolesService.findById(id);
 
     if (!role) {
@@ -125,7 +128,11 @@ export class RolesController {
   })
   @Put(':id')
   @RequirePermission('roles.update')
-  async update(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
+  async update(
+    @Param('id', ParseMongoIdPipe) id: string,
+    @Body() updateRoleDto: UpdateRoleDto,
+    @GetUser() user: AuthenticatedUser,
+  ) {
     const role = await this.rolesService.findById(id);
 
     if (!role) {
@@ -134,7 +141,12 @@ export class RolesController {
 
     // Prevent updating system roles
     if (role.isSystemRole) {
-      throw new BadRequestException('Cannot update system roles');
+      const isSystemAdmin = user.roles.includes('super admin');
+      if (!isSystemAdmin) {
+        throw new BadRequestException(
+          'Only system admin can update system roles',
+        );
+      }
     }
 
     const updatedRole = await this.rolesService.update(id, updateRoleDto);
@@ -160,7 +172,10 @@ export class RolesController {
   @Delete(':id')
   @RequirePermission('roles.delete')
   @HttpCode(HttpStatus.OK)
-  async delete(@Param('id') id: string) {
+  async delete(
+    @Param('id', ParseMongoIdPipe) id: string,
+    @GetUser() user: AuthenticatedUser,
+  ) {
     const role = await this.rolesService.findById(id);
 
     if (!role) {
@@ -169,7 +184,12 @@ export class RolesController {
 
     // Prevent deleting system roles
     if (role.isSystemRole) {
-      throw new BadRequestException('Cannot delete system roles');
+      const isSystemAdmin = user.roles.includes('super admin');
+      if (!isSystemAdmin) {
+        throw new BadRequestException(
+          'Only system admin can delete system roles',
+        );
+      }
     }
 
     await this.rolesService.delete(id);

@@ -75,7 +75,7 @@ export class AuditLogInterceptor implements NestInterceptor {
             .logSuccess({
               userId: user.userId,
               userEmail: user.email,
-              userName: user.fullName,
+              userName: user.fullName || user.email,
               action,
               resource,
               resourceId,
@@ -94,7 +94,7 @@ export class AuditLogInterceptor implements NestInterceptor {
             .logFailure({
               userId: user.userId,
               userEmail: user.email,
-              userName: user.fullName,
+              userName: user.fullName || user.email,
               action,
               resource,
               resourceId,

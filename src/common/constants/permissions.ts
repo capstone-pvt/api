@@ -28,6 +28,10 @@ export const PERMISSION_KEYS = {
   // Settings
   SETTINGS_VIEW: 'settings.view',
   SETTINGS_MANAGE: 'settings.manage',
+
+  // Evaluation Forms
+  EVALUATION_FORMS_READ: 'evaluation-forms.read',
+  EVALUATION_FORMS_MANAGE: 'evaluation-forms.manage',
 } as const;
 
 export const PERMISSIONS = [
@@ -204,6 +208,26 @@ export const PERMISSIONS = [
     category: 'Settings Management',
     isSystemPermission: true,
   },
+
+  // Evaluation Forms
+  {
+    name: 'evaluation-forms.read',
+    displayName: 'Read Evaluation Forms',
+    description: 'View evaluation forms',
+    resource: 'evaluation-forms',
+    action: 'read',
+    category: 'Evaluation Forms',
+    isSystemPermission: true,
+  },
+  {
+    name: 'evaluation-forms.manage',
+    displayName: 'Manage Evaluation Forms',
+    description: 'Create and update evaluation forms',
+    resource: 'evaluation-forms',
+    action: 'manage',
+    category: 'Evaluation Forms',
+    isSystemPermission: true,
+  },
 ];
 
 export const PERMISSION_CATEGORIES = {
@@ -213,6 +237,7 @@ export const PERMISSION_CATEGORIES = {
   PROJECT_MANAGEMENT: 'Project Management',
   ANALYTICS: 'Analytics',
   SETTINGS_MANAGEMENT: 'Settings Management',
+  EVALUATION_FORMS: 'Evaluation Forms',
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSION_KEYS;

@@ -16,13 +16,18 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     private configService: ConfigService,
     private usersService: UsersService,
   ) {
+    const jwtSecret = configService.get<string>('jwt.secret');
+    if (!jwtSecret) {
+      throw new Error('JWT secret is not configured');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request) => {
           return (request?.cookies?.accessToken as string) || null;
         },
       ]),
-      secretOrKey: configService.get<string>('jwt.secret') || 'fallback-secret',
+      secretOrKey: jwtSecret,
       ignoreExpiration: false,
     });
   }
@@ -65,6 +70,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     return {
       userId: user._id.toString(),
       email: user.email,
+      fullName: user.fullName || `${user.firstName} ${user.lastName}`,
       roles: (user.roles as unknown as Array<{ name: string }>).map(
         (r) => r.name,
       ),

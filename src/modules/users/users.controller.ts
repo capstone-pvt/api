@@ -32,6 +32,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { GetUser } from '../../common/decorators/get-user.decorator';
+import { ParseMongoIdPipe } from '../../common/pipes/parse-mongo-id.pipe';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
@@ -100,7 +101,7 @@ export class UsersController {
   })
   @Get(':id')
   @RequirePermission('users.read')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseMongoIdPipe) id: string) {
     const user = await this.usersService.findById(id);
 
     if (!user) {
@@ -126,7 +127,7 @@ export class UsersController {
   })
   @Put(':id')
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseMongoIdPipe) id: string,
     @Body() updateUserDto: UpdateUserDto,
     @GetUser() currentUser: AuthenticatedUser,
   ) {
@@ -181,7 +182,7 @@ export class UsersController {
   @RequirePermission('users.delete')
   @HttpCode(HttpStatus.OK)
   async delete(
-    @Param('id') id: string,
+    @Param('id', ParseMongoIdPipe) id: string,
     @GetUser() currentUser: AuthenticatedUser,
   ) {
     // Prevent users from deleting themselves
@@ -215,7 +216,7 @@ export class UsersController {
   @Put(':id/roles')
   @RequirePermission('users.update')
   async assignRoles(
-    @Param('id') id: string,
+    @Param('id', ParseMongoIdPipe) id: string,
     @Body() assignRolesDto: AssignRolesDto,
   ) {
     const user = await this.usersService.findById(id);

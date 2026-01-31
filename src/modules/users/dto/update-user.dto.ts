@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsArray,
   IsOptional,
+  Matches,
 } from 'class-validator';
 
 export class UpdateUserDto {
@@ -14,6 +15,10 @@ export class UpdateUserDto {
 
   @IsString()
   @MinLength(8)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/, {
+    message:
+      'Password must include uppercase, lowercase, number, and special character',
+  })
   @IsOptional()
   password?: string;
 

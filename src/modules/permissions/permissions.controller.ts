@@ -23,6 +23,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { CreatePermissionDto } from './dto/create-permission.dto';
+import { ParseMongoIdPipe } from '../../common/pipes/parse-mongo-id.pipe';
 
 @ApiTags('Permissions')
 @ApiBearerAuth('JWT-auth')
@@ -127,7 +128,7 @@ export class PermissionsController {
   })
   @Get(':id')
   @RequirePermission('permissions.read')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseMongoIdPipe) id: string) {
     const permission = await this.permissionsService.findById(id);
 
     if (!permission) {

@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
@@ -18,9 +19,12 @@ import { BulkUploadPersonnelResponse } from './dto/bulk-upload-response.dto';
 import { CalculateExcellenceDto } from './dto/calculate-excellence.dto';
 import { ExcellenceTrackingService } from './services/excellence-tracking.service';
 import { GetUser } from '../../common/decorators/get-user.decorator';
-import { AuthenticatedUser } from '../../common/interfaces/jwt-payload.interface';
+import type { AuthenticatedUser } from '../../common/interfaces/jwt-payload.interface';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { ParseMongoIdPipe } from '../../common/pipes/parse-mongo-id.pipe';
 import * as xlsx from 'xlsx';
 
+@UseGuards(JwtAuthGuard)
 @Controller('personnel')
 export class PersonnelController {
   constructor(
@@ -45,20 +49,20 @@ export class PersonnelController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseMongoIdPipe) id: string) {
     return this.personnelService.findOne(id);
   }
 
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseMongoIdPipe) id: string,
     @Body() updatePersonnelDto: UpdatePersonnelDto,
   ) {
     return this.personnelService.update(id, updatePersonnelDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseMongoIdPipe) id: string) {
     return this.personnelService.remove(id);
   }
 
@@ -173,7 +177,7 @@ export class PersonnelController {
   // Excellence tracking endpoints
   @Post(':id/calculate-excellence')
   async calculateExcellence(
-    @Param('id') id: string,
+    @Param('id', ParseMongoIdPipe) id: string,
     @Body() dto: CalculateExcellenceDto,
   ) {
     return this.excellenceTrackingService.calculateExcellenceForPersonnel(
@@ -194,7 +198,7 @@ export class PersonnelController {
   }
 
   @Get(':id/excellence-history')
-  async getExcellenceHistory(@Param('id') id: string) {
+  async getExcellenceHistory(@Param('id', ParseMongoIdPipe) id: string) {
     return this.excellenceTrackingService.getExcellenceHistory(id);
   }
 

@@ -18,9 +18,20 @@ async function bootstrap() {
   const logger = app.get<LoggerService>(WINSTON_MODULE_NEST_PROVIDER);
   app.useLogger(logger);
 
+  const defaultFrontendUrls = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ];
+  const allowedOrigins = (process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const corsOrigins =
+    allowedOrigins.length > 0 ? allowedOrigins : defaultFrontendUrls;
+
   // CORS configuration
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -88,7 +99,7 @@ async function bootstrap() {
   logger.log(`🚀 NestJS API running on http://localhost:${port}`);
   logger.log(`📝 API prefix: /api`);
   logger.log(`📚 Swagger documentation: http://localhost:${port}/api/docs`);
-  logger.log(`🌐 CORS enabled for: http://localhost:3000`);
+  logger.log(`🌐 CORS enabled for: ${corsOrigins.join(', ')}`);
 }
 
 void bootstrap();

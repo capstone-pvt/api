@@ -40,6 +40,9 @@ export class EvaluationForm {
   @Prop({ default: '' })
   description?: string;
 
+  @Prop({ type: [String], default: [] })
+  evaluatorOptions?: string[];
+
   @Prop({ type: [EvaluationScaleItemSchema], default: [] })
   scale?: EvaluationScaleItem[];
 

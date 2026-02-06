@@ -42,6 +42,11 @@ export class CreateEvaluationFormDto {
   description?: string;
 
   @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  evaluatorOptions?: string[];
+
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => EvaluationScaleItemDto)
   @IsOptional()

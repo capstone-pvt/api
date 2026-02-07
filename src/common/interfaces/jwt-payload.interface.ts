@@ -14,5 +14,6 @@ export interface AuthenticatedUser {
   roles: string[];
   permissions: string[];
   department?: string;
+  departmentName?: string;
   fullName?: string;
 }

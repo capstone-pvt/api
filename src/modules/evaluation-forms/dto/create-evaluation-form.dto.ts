@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsIn,
+  IsMongoId,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -57,4 +58,18 @@ export class CreateEvaluationFormDto {
   @Type(() => EvaluationSectionDto)
   @IsOptional()
   sections?: EvaluationSectionDto[];
+
+  @IsArray()
+  @IsMongoId({ each: true })
+  @IsOptional()
+  departments?: string[];
+
+  @IsString()
+  @IsIn(['1st', '2nd', 'Summer'])
+  @IsOptional()
+  semester?: string;
+
+  @IsString()
+  @IsOptional()
+  schoolYear?: string;
 }

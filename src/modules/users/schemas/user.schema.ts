@@ -49,6 +49,15 @@ export class User {
   @Prop({ type: Types.ObjectId, ref: 'Department' })
   department?: Types.ObjectId;
 
+  @Prop({ trim: true })
+  studentId?: string;
+
+  @Prop({ trim: true })
+  gradeLevel?: string;
+
+  @Prop({ trim: true })
+  adviser?: string;
+
   @Prop()
   lastLoginAt?: Date;
 

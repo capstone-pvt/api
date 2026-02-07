@@ -42,6 +42,7 @@ export class UsersRepository {
         path: 'roles',
         populate: { path: 'permissions' },
       })
+      .populate('department')
       .exec();
   }
 

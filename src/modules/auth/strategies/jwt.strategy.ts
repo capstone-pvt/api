@@ -67,6 +67,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       }
     }
 
+    const dept = user.department as unknown as
+      | { _id: { toString(): string }; name: string }
+      | undefined;
+
     return {
       userId: user._id.toString(),
       email: user.email,
@@ -75,7 +79,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         (r) => r.name,
       ),
       permissions,
-      department: user.department?.toString(),
+      department: dept?._id?.toString(),
+      departmentName: dept?.name,
     };
   }
 }

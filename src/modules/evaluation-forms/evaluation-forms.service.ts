@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { CreateEvaluationFormDto } from './dto/create-evaluation-form.dto';
 import { UpdateEvaluationFormDto } from './dto/update-evaluation-form.dto';
 import {
@@ -25,12 +25,40 @@ export class EvaluationFormsService {
   async findAll(): Promise<EvaluationForm[]> {
     return this.evaluationFormModel
       .find()
+      .populate('departments')
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  async findAvailable(filters: {
+    departmentId?: string;
+    audience?: string;
+  }): Promise<EvaluationForm[]> {
+    const query: FilterQuery<EvaluationFormDocument> = {};
+
+    if (filters.audience) {
+      query.audience = filters.audience;
+    }
+
+    if (filters.departmentId) {
+      query.$or = [
+        { departments: { $size: 0 } },
+        { departments: filters.departmentId },
+      ];
+    }
+
+    return this.evaluationFormModel
+      .find(query)
+      .populate('departments')
       .sort({ createdAt: -1 })
       .exec();
   }
 
   async findOne(id: string): Promise<EvaluationForm> {
-    const form = await this.evaluationFormModel.findById(id).exec();
+    const form = await this.evaluationFormModel
+      .findById(id)
+      .populate('departments')
+      .exec();
     if (!form) {
       throw new NotFoundException('Evaluation form not found');
     }

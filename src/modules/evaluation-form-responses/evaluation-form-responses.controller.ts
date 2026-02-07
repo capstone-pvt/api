@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Body,
   Query,
   Param,
   UseGuards,
@@ -15,9 +16,12 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { GetUser } from '../../common/decorators/get-user.decorator';
+import type { AuthenticatedUser } from '../../common/interfaces/jwt-payload.interface';
 import { ParseMongoIdPipe } from '../../common/pipes/parse-mongo-id.pipe';
 import { EvaluationFormResponsesService } from './evaluation-form-responses.service';
 import { BulkUploadResult } from './dto/bulk-upload-response.dto';
+import { CreateEvaluationFormResponseDto } from './dto/create-evaluation-form-response.dto';
 
 @Controller('evaluation-form-responses')
 @UseGuards(JwtAuthGuard, PermissionGuard)
@@ -25,6 +29,23 @@ export class EvaluationFormResponsesController {
   constructor(
     private readonly evaluationFormResponsesService: EvaluationFormResponsesService,
   ) {}
+
+  @Post('submit')
+  submit(
+    @Body() dto: CreateEvaluationFormResponseDto,
+    @GetUser() user: AuthenticatedUser,
+  ) {
+    return this.evaluationFormResponsesService.createResponse(dto, {
+      fullName: user.fullName,
+      email: user.email,
+      department: user.department,
+    });
+  }
+
+  @Get('my-responses')
+  getMyResponses(@GetUser() user: AuthenticatedUser) {
+    return this.evaluationFormResponsesService.findByRespondentEmail(user.email);
+  }
 
   @Get()
   @RequirePermission('evaluation-forms.read')

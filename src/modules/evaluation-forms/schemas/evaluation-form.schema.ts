@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type EvaluationFormDocument = EvaluationForm & Document;
 
@@ -48,6 +48,15 @@ export class EvaluationForm {
 
   @Prop({ type: [EvaluationSectionSchema], default: [] })
   sections?: EvaluationSection[];
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Department' }], default: [] })
+  departments?: Types.ObjectId[];
+
+  @Prop({ enum: ['1st', '2nd', 'Summer'] })
+  semester?: string;
+
+  @Prop({ trim: true })
+  schoolYear?: string;
 }
 
 export const EvaluationFormSchema = SchemaFactory.createForClass(

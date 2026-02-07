@@ -45,4 +45,16 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   department?: string;
+
+  @IsString()
+  @IsOptional()
+  studentId?: string;
+
+  @IsString()
+  @IsOptional()
+  gradeLevel?: string;
+
+  @IsString()
+  @IsOptional()
+  adviser?: string;
 }

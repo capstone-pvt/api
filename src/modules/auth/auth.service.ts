@@ -150,10 +150,11 @@ export class AuthService {
       : this.configService.get<string>('jwt.refreshTokenExpirationShort') ||
         '7d';
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const refreshToken = this.jwtService.sign({ userId: user._id.toString() }, {
       secret: refreshSecret,
       expiresIn: refreshExpiration,
-    } as any);
+    } as unknown as any);
 
     // Create session (this will invalidate all previous sessions)
     const expiresAt = new Date(

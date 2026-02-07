@@ -10,6 +10,7 @@ import {
 } from './schemas/evaluation-form-response.schema';
 import type { EvaluationFormDocument } from '../evaluation-forms/schemas/evaluation-form.schema';
 import { BulkUploadResult } from './dto/bulk-upload-response.dto';
+import { CreateEvaluationFormResponseDto } from './dto/create-evaluation-form-response.dto';
 
 type RowData = Record<string, unknown>;
 
@@ -26,6 +27,38 @@ export class EvaluationFormResponsesService {
     private readonly responseModel: Model<EvaluationFormResponseDocument>,
     private readonly evaluationFormsService: EvaluationFormsService,
   ) {}
+
+  async createResponse(
+    dto: CreateEvaluationFormResponseDto,
+    user: { fullName?: string; email: string; department?: string },
+  ): Promise<EvaluationFormResponse> {
+    const form = await this.evaluationFormsService.findOne(dto.formId);
+    if (!form) {
+      throw new NotFoundException('Evaluation form not found');
+    }
+
+    const totalScore = dto.answers.reduce((sum, a) => sum + a.score, 0);
+
+    const response = new this.responseModel({
+      form: (form as EvaluationFormDocument)._id,
+      respondentName: user.fullName,
+      respondentEmail: user.email,
+      respondentDepartment: user.department,
+      semester: dto.semester,
+      evaluator: dto.evaluator,
+      answers: dto.answers,
+      totalScore,
+    });
+
+    return response.save();
+  }
+
+  async findByRespondentEmail(email: string): Promise<EvaluationFormResponse[]> {
+    return this.responseModel
+      .find({ respondentEmail: email })
+      .sort({ createdAt: -1 })
+      .exec();
+  }
 
   async findByForm(
     formId: string,

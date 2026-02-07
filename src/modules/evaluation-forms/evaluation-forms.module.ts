@@ -6,11 +6,16 @@ import {
   EvaluationForm,
   EvaluationFormSchema,
 } from './schemas/evaluation-form.schema';
+import {
+  Department,
+  DepartmentSchema,
+} from '../departments/schemas/department.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: EvaluationForm.name, schema: EvaluationFormSchema },
+      { name: Department.name, schema: DepartmentSchema },
     ]),
   ],
   controllers: [EvaluationFormsController],

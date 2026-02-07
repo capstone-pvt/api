@@ -48,6 +48,11 @@ export class PersonnelController {
     return this.personnelService.findAll(departmentFilter);
   }
 
+  @Get('by-department/:departmentId')
+  findByDepartment(@Param('departmentId', ParseMongoIdPipe) departmentId: string) {
+    return this.personnelService.findAll(departmentId);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseMongoIdPipe) id: string) {
     return this.personnelService.findOne(id);

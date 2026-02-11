@@ -23,6 +23,10 @@ export class AuditLogsRepository {
     private auditLogModel: Model<AuditLogDocument>,
   ) {}
 
+  private escapeRegex(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
   async create(data: {
     userId: string;
     userEmail: string;
@@ -70,7 +74,8 @@ export class AuditLogsRepository {
     }
 
     if (userEmail) {
-      query.userEmail = { $regex: userEmail, $options: 'i' };
+      const escapedEmail = this.escapeRegex(userEmail);
+      query.userEmail = { $regex: escapedEmail, $options: 'i' };
     }
 
     if (action) {

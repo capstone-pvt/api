@@ -16,15 +16,18 @@ export class JwtRefreshStrategy extends PassportStrategy(
     private configService: ConfigService,
     private sessionsService: SessionsService,
   ) {
+    const refreshSecret = configService.get<string>('jwt.refreshSecret');
+    if (!refreshSecret) {
+      throw new Error('JWT refresh secret is not configured');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request) => {
           return (request?.cookies?.refreshToken as string) || null;
         },
       ]),
-      secretOrKey:
-        configService.get<string>('jwt.refreshSecret') ||
-        'fallback-refresh-secret',
+      secretOrKey: refreshSecret,
       passReqToCallback: true,
     });
   }

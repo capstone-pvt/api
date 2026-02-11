@@ -14,6 +14,10 @@ export class UsersRepository {
     @InjectModel(Role.name) private roleModel: Model<RoleDocument>,
   ) {}
 
+  private escapeRegex(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
   async create(data: CreateUserDto): Promise<UserDocument> {
     let roleIds = data.roles;
     if (!roleIds || roleIds.length === 0) {
@@ -38,6 +42,7 @@ export class UsersRepository {
         path: 'roles',
         populate: { path: 'permissions' },
       })
+      .populate('department')
       .exec();
   }
 
@@ -79,10 +84,11 @@ export class UsersRepository {
     const query: FilterQuery<UserDocument> = {};
 
     if (search) {
+      const escapedSearch = this.escapeRegex(search);
       query.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
+        { firstName: { $regex: escapedSearch, $options: 'i' } },
+        { lastName: { $regex: escapedSearch, $options: 'i' } },
+        { email: { $regex: escapedSearch, $options: 'i' } },
       ];
     }
 
@@ -106,16 +112,16 @@ export class UsersRepository {
     let filteredUsers = users;
     if (role) {
       filteredUsers = users.filter((user) =>
-        user.roles.some((r: any) => r(r as { name: string }).name === role),
+        user.roles.some((r: any) => (r as { name: string }).name === role),
       );
     }
 
     return {
       users: filteredUsers,
-      total,
+      total: role ? filteredUsers.length : total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil((role ? filteredUsers.length : total) / limit),
     };
   }
 
@@ -165,10 +171,11 @@ export class UsersRepository {
     const query: FilterQuery<UserDocument> = {};
 
     if (filters.search) {
+      const escapedSearch = this.escapeRegex(filters.search);
       query.$or = [
-        { firstName: { $regex: filters.search, $options: 'i' } },
-        { lastName: { $regex: filters.search, $options: 'i' } },
-        { email: { $regex: filters.search, $options: 'i' } },
+        { firstName: { $regex: escapedSearch, $options: 'i' } },
+        { lastName: { $regex: escapedSearch, $options: 'i' } },
+        { email: { $regex: escapedSearch, $options: 'i' } },
       ];
     }
 

@@ -1,4 +1,11 @@
-import { IsOptional, IsString, IsEnum, IsNumber, Min } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AuditLogFiltersDto {
@@ -44,5 +51,6 @@ export class AuditLogFiltersDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1)
+  @Max(200)
   limit?: number;
 }

@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
   UseInterceptors,
   UploadedFile,
   Res,
@@ -16,7 +17,10 @@ import { NonTeachingEvaluationsService } from './non-teaching-evaluations.servic
 import { CreateNonTeachingEvaluationDto } from './dto/create-non-teaching-evaluation.dto';
 import { UpdateNonTeachingEvaluationDto } from './dto/update-non-teaching-evaluation.dto';
 import { BulkUploadResult } from './dto/bulk-upload-response.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { ParseMongoIdPipe } from '../../common/pipes/parse-mongo-id.pipe';
 
+@UseGuards(JwtAuthGuard)
 @Controller('non-teaching-evaluations')
 export class NonTeachingEvaluationsController {
   constructor(private readonly service: NonTeachingEvaluationsService) {}
@@ -48,20 +52,20 @@ export class NonTeachingEvaluationsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseMongoIdPipe) id: string) {
     return this.service.findOne(id);
   }
 
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseMongoIdPipe) id: string,
     @Body() updateDto: UpdateNonTeachingEvaluationDto,
   ) {
     return this.service.update(id, updateDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseMongoIdPipe) id: string) {
     return this.service.remove(id);
   }
 

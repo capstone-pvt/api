@@ -57,6 +57,9 @@ export class EvaluationForm {
 
   @Prop({ trim: true })
   schoolYear?: string;
+
+  @Prop({ type: Date })
+  endDate?: Date;
 }
 
 export const EvaluationFormSchema = SchemaFactory.createForClass(

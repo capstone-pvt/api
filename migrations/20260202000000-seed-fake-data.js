@@ -4,17 +4,17 @@ const bcrypt = require('bcryptjs');
 
 module.exports = {
   async up(db) {
-    console.log('Starting fake data generation...');
+    console.log('Starting data seeding...');
 
     // 1. Generate Roles
     console.log('Generating roles...');
     const roles = [
       {
         _id: new ObjectId(),
-        name: 'super_admin',
+        name: 'super',
         displayName: 'Super Administrator',
         description: 'Full system access with all permissions',
-        hierarchy: 1,
+        hierarchy: 0,
         permissions: [],
         isSystemRole: true,
         createdAt: new Date(),
@@ -25,6 +25,17 @@ module.exports = {
         name: 'admin',
         displayName: 'Administrator',
         description: 'System administrator with elevated permissions',
+        hierarchy: 1,
+        permissions: [],
+        isSystemRole: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        _id: new ObjectId(),
+        name: 'president',
+        displayName: 'President',
+        description: 'University president with full administrative authority',
         hierarchy: 2,
         permissions: [],
         isSystemRole: true,
@@ -33,20 +44,20 @@ module.exports = {
       },
       {
         _id: new ObjectId(),
-        name: 'department_head',
-        displayName: 'Department Head',
-        description: 'Head of department with management permissions',
+        name: 'vp-acad',
+        displayName: 'VP Academic Affairs',
+        description: 'Vice President for Academic Affairs',
         hierarchy: 3,
         permissions: [],
-        isSystemRole: false,
+        isSystemRole: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
         _id: new ObjectId(),
-        name: 'evaluator',
-        displayName: 'Evaluator',
-        description: 'Can perform evaluations and view reports',
+        name: 'dean',
+        displayName: 'Dean',
+        description: 'College dean with department management permissions',
         hierarchy: 4,
         permissions: [],
         isSystemRole: false,
@@ -55,9 +66,9 @@ module.exports = {
       },
       {
         _id: new ObjectId(),
-        name: 'faculty',
-        displayName: 'Faculty Member',
-        description: 'Teaching faculty with basic access',
+        name: 'hr',
+        displayName: 'Human Resources',
+        description: 'Human Resources personnel',
         hierarchy: 5,
         permissions: [],
         isSystemRole: false,
@@ -66,10 +77,32 @@ module.exports = {
       },
       {
         _id: new ObjectId(),
-        name: 'staff',
-        displayName: 'Staff Member',
-        description: 'Non-teaching staff with basic access',
+        name: 'teaching',
+        displayName: 'Teaching',
+        description: 'Teaching faculty member',
         hierarchy: 6,
+        permissions: [],
+        isSystemRole: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        _id: new ObjectId(),
+        name: 'non-teaching',
+        displayName: 'Non-Teaching',
+        description: 'Non-teaching staff member',
+        hierarchy: 7,
+        permissions: [],
+        isSystemRole: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        _id: new ObjectId(),
+        name: 'student',
+        displayName: 'Student',
+        description: 'Student evaluator',
+        hierarchy: 8,
         permissions: [],
         isSystemRole: false,
         createdAt: new Date(),
@@ -82,342 +115,239 @@ module.exports = {
 
     // 2. Generate Departments
     console.log('Generating departments...');
-    const departments = [
-      { name: 'Computer Science', description: 'Department of Computer Science and Information Technology' },
-      { name: 'Mathematics', description: 'Department of Mathematics and Statistics' },
-      { name: 'Engineering', description: 'Department of Engineering' },
-      { name: 'Business Administration', description: 'Department of Business and Management' },
-      { name: 'English', description: 'Department of English and Literature' },
-      { name: 'Biology', description: 'Department of Biological Sciences' },
-      { name: 'Chemistry', description: 'Department of Chemistry' },
-      { name: 'Physics', description: 'Department of Physics' },
-      { name: 'Human Resources', description: 'Human Resources Department' },
-      { name: 'Finance', description: 'Finance and Accounting Department' },
-      { name: 'IT Support', description: 'Information Technology Support' },
-      { name: 'Administration', description: 'General Administration' },
+    const departmentDocs = [
+      {
+        _id: new ObjectId(),
+        name: 'College of Computing and Information Sciences',
+        description: 'College of Computing and Information Sciences',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        _id: new ObjectId(),
+        name: 'College of Criminal Justice Education',
+        description: 'College of Criminal Justice Education',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        _id: new ObjectId(),
+        name: 'College of Arts and Sciences',
+        description: 'College of Arts and Sciences',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        _id: new ObjectId(),
+        name: 'College of Teachers Education',
+        description: 'College of Teachers Education',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        _id: new ObjectId(),
+        name: 'College of Business and Accountancy',
+        description: 'College of Business and Accountancy',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        _id: new ObjectId(),
+        name: 'College of Tourism and Hospitality Management',
+        description: 'College of Tourism and Hospitality Management',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ];
-
-    const departmentDocs = departments.map(dept => ({
-      _id: new ObjectId(),
-      name: dept.name,
-      description: dept.description,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }));
 
     await db.collection('departments').insertMany(departmentDocs);
     console.log(`✓ Created ${departmentDocs.length} departments`);
 
-    // 3. Generate Teaching Personnel
-    console.log('Generating teaching personnel...');
-    const teachingPersonnel = [];
-    const teachingDepts = departmentDocs.filter(d =>
-      !['Human Resources', 'Finance', 'IT Support', 'Administration'].includes(d.name)
-    );
+    // Helpers
+    const getDept = (name) => departmentDocs.find((d) => d.name === name);
+    const getRole = (name) => roles.find((r) => r.name === name);
 
-    for (let i = 0; i < 50; i++) {
-      const firstName = faker.person.firstName();
-      const lastName = faker.person.lastName();
-      const email = faker.internet.email({ firstName, lastName }).toLowerCase();
-      const hireDate = faker.date.past({ years: 10 });
-
-      teachingPersonnel.push({
-        _id: new ObjectId(),
-        firstName,
-        lastName,
-        middleName: faker.helpers.maybe(() => faker.person.middleName(), { probability: 0.6 }),
-        email,
-        department: faker.helpers.arrayElement(teachingDepts)._id,
-        jobTitle: faker.helpers.arrayElement([
-          'Professor',
-          'Associate Professor',
-          'Assistant Professor',
-          'Lecturer',
-          'Senior Lecturer',
-          'Instructor'
-        ]),
-        hireDate,
-        phoneNumber: faker.phone.number(),
-        gender: faker.helpers.arrayElement(['Male', 'Female', 'Other']),
-        personnelType: 'Teaching',
-        predictedPerformance: faker.helpers.arrayElement(['High', 'Medium', 'Low']),
-        performanceStatus: faker.helpers.arrayElement(['Performing', 'Non-Performing']),
-        excellenceStatus: faker.helpers.arrayElement(['Excellent', 'Good', 'Average', 'Below Average', 'Not Evaluated']),
-        excellenceStartYear: 2018,
-        excellenceEndYear: 2024,
-        excellenceThreshold: 4.0,
-        lastExcellenceCalculation: faker.date.recent({ days: 30 }),
-        sixYearAverage: faker.number.float({ min: 2.5, max: 5.0, fractionDigits: 2 }),
-        totalSemestersEvaluated: faker.number.int({ min: 1, max: 12 }),
-        createdAt: hireDate,
-        updatedAt: new Date(),
-      });
-    }
-
-    await db.collection('personnels').insertMany(teachingPersonnel);
-    console.log(`✓ Created ${teachingPersonnel.length} teaching personnel`);
-
-    // 4. Generate Non-Teaching Personnel
-    console.log('Generating non-teaching personnel...');
-    const nonTeachingPersonnel = [];
-    const nonTeachingDepts = departmentDocs.filter(d =>
-      ['Human Resources', 'Finance', 'IT Support', 'Administration'].includes(d.name)
-    );
-
-    for (let i = 0; i < 30; i++) {
-      const firstName = faker.person.firstName();
-      const lastName = faker.person.lastName();
-      const email = faker.internet.email({ firstName, lastName }).toLowerCase();
-      const hireDate = faker.date.past({ years: 10 });
-
-      nonTeachingPersonnel.push({
-        _id: new ObjectId(),
-        firstName,
-        lastName,
-        middleName: faker.helpers.maybe(() => faker.person.middleName(), { probability: 0.6 }),
-        email,
-        department: faker.helpers.arrayElement(nonTeachingDepts)._id,
-        jobTitle: faker.helpers.arrayElement([
-          'HR Manager',
-          'HR Assistant',
-          'Accountant',
-          'Finance Officer',
-          'IT Specialist',
-          'System Administrator',
-          'Administrative Assistant',
-          'Office Manager',
-          'Registrar',
-          'Administrative Clerk'
-        ]),
-        hireDate,
-        phoneNumber: faker.phone.number(),
-        gender: faker.helpers.arrayElement(['Male', 'Female', 'Other']),
-        personnelType: 'Non-Teaching',
-        predictedPerformance: faker.helpers.arrayElement(['High', 'Medium', 'Low']),
-        performanceStatus: faker.helpers.arrayElement(['Performing', 'Non-Performing']),
-        excellenceStatus: faker.helpers.arrayElement(['Excellent', 'Good', 'Average', 'Below Average', 'Not Evaluated']),
-        excellenceStartYear: 2018,
-        excellenceEndYear: 2024,
-        excellenceThreshold: 4.0,
-        lastExcellenceCalculation: faker.date.recent({ days: 30 }),
-        sixYearAverage: faker.number.float({ min: 2.5, max: 5.0, fractionDigits: 2 }),
-        totalSemestersEvaluated: faker.number.int({ min: 1, max: 12 }),
-        createdAt: hireDate,
-        updatedAt: new Date(),
-      });
-    }
-
-    await db.collection('personnels').insertMany(nonTeachingPersonnel);
-    console.log(`✓ Created ${nonTeachingPersonnel.length} non-teaching personnel`);
-
-    // 5. Generate Users
-    console.log('Generating users...');
-    const users = [];
-    const defaultPassword = await bcrypt.hash('password123', 12);
-
-    // Get role references
-    const superAdminRole = roles.find(r => r.name === 'super_admin');
-    const adminRole = roles.find(r => r.name === 'admin');
-    const departmentHeadRole = roles.find(r => r.name === 'department_head');
-    const evaluatorRole = roles.find(r => r.name === 'evaluator');
-    const facultyRole = roles.find(r => r.name === 'faculty');
-    const staffRole = roles.find(r => r.name === 'staff');
-
-    // Create 1 Super Admin
-    users.push({
+    const makePersonnel = (firstName, lastName, middleName, email, deptId, jobTitle, gender, type) => ({
       _id: new ObjectId(),
-      email: 'superadmin@jcd.edu',
-      password: defaultPassword,
-      firstName: 'Super',
-      lastName: 'Admin',
-      isActive: true,
-      isEmailVerified: true,
-      roles: [superAdminRole._id],
-      department: faker.helpers.arrayElement(departmentDocs)._id,
-      lastLoginAt: faker.date.recent({ days: 7 }),
+      firstName,
+      lastName,
+      middleName: middleName || null,
+      email,
+      department: deptId,
+      jobTitle,
+      hireDate: new Date('2020-01-15'),
+      phoneNumber: '',
+      gender,
+      personnelType: type,
+      predictedPerformance: null,
+      performanceStatus: null,
+      excellenceStatus: 'Not Evaluated',
+      excellenceStartYear: 2018,
+      excellenceEndYear: 2024,
+      excellenceThreshold: 4.0,
+      lastExcellenceCalculation: null,
+      sixYearAverage: null,
+      totalSemestersEvaluated: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    // Create 2 Admins
-    for (let i = 1; i <= 2; i++) {
+    // 3. Generate Personnel
+    console.log('Generating personnel...');
+
+    // --- Named personnel (deans, HR, VP, president) ---
+    const personnel = [
+      makePersonnel('Daisa', 'Gupit', 'O.', 'daisa.gupit@jcd.edu', getDept('College of Computing and Information Sciences')._id, 'Dean', 'Female', 'Teaching'),
+      makePersonnel('Jun', 'Villarima', null, 'jun.villarima@jcd.edu', getDept('College of Criminal Justice Education')._id, 'Dean', 'Male', 'Teaching'),
+      makePersonnel('Rolly', 'Lianos', null, 'rolly.lianos@jcd.edu', getDept('College of Arts and Sciences')._id, 'Dean', 'Male', 'Teaching'),
+      makePersonnel('Melissa', 'Maloloy-on', null, 'melissa.maloloyon@jcd.edu', getDept('College of Teachers Education')._id, 'Dean', 'Female', 'Teaching'),
+      makePersonnel('Russel', 'Coraza', null, 'russel.coraza@jcd.edu', getDept('College of Business and Accountancy')._id, 'Dean', 'Male', 'Teaching'),
+      makePersonnel('Angelyn', 'Paquera', null, 'angelyn.paquera@jcd.edu', getDept('College of Tourism and Hospitality Management')._id, 'Dean', 'Female', 'Teaching'),
+      makePersonnel('Ricky', 'Destacamento', 'A.', 'ricky.destacamento@jcd.edu', null, 'HR Officer', 'Male', 'Non-Teaching'),
+      makePersonnel('Beverly', 'Jaminal', null, 'beverly.jaminal@jcd.edu', null, 'VP for Academic Affairs', 'Female', 'Non-Teaching'),
+      makePersonnel('Ronniel', 'Babano', null, 'ronniel.babano@jcd.edu', null, 'President', 'Male', 'Non-Teaching'),
+    ];
+
+    // --- 3 Teaching personnel per department (18 total) ---
+    const teachingPersonnel = [];
+    const teachingJobTitles = ['Professor', 'Associate Professor', 'Assistant Professor', 'Lecturer', 'Senior Lecturer', 'Instructor'];
+
+    for (const dept of departmentDocs) {
+      for (let i = 0; i < 3; i++) {
+        const firstName = faker.person.firstName();
+        const lastName = faker.person.lastName();
+        const gender = faker.helpers.arrayElement(['Male', 'Female']);
+        const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@jcd.edu`.replace(/\s+/g, '');
+        const p = makePersonnel(firstName, lastName, null, email, dept._id, faker.helpers.arrayElement(teachingJobTitles), gender, 'Teaching');
+        teachingPersonnel.push(p);
+        personnel.push(p);
+      }
+    }
+
+    // --- 5 Non-teaching personnel ---
+    const nonTeachingPersonnel = [];
+    const nonTeachingJobTitles = ['Administrative Assistant', 'Registrar', 'Accounting Staff', 'IT Support', 'Library Staff'];
+
+    for (let i = 0; i < 5; i++) {
       const firstName = faker.person.firstName();
       const lastName = faker.person.lastName();
-      users.push({
-        _id: new ObjectId(),
-        email: `admin${i}@jcd.edu`,
-        password: defaultPassword,
-        firstName,
-        lastName,
-        isActive: true,
-        isEmailVerified: true,
-        roles: [adminRole._id],
-        department: faker.helpers.arrayElement(departmentDocs)._id,
-        lastLoginAt: faker.date.recent({ days: 30 }),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      const gender = faker.helpers.arrayElement(['Male', 'Female']);
+      const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@jcd.edu`.replace(/\s+/g, '');
+      const dept = faker.helpers.arrayElement(departmentDocs);
+      const p = makePersonnel(firstName, lastName, null, email, dept._id, nonTeachingJobTitles[i], gender, 'Non-Teaching');
+      nonTeachingPersonnel.push(p);
+      personnel.push(p);
     }
 
-    // Create 12 Department Heads (one for each department)
-    for (let i = 0; i < departmentDocs.length; i++) {
-      const firstName = faker.person.firstName();
-      const lastName = faker.person.lastName();
-      const deptName = departmentDocs[i].name.toLowerCase().replace(/\s+/g, '');
-      users.push({
-        _id: new ObjectId(),
-        email: `head.${deptName}@jcd.edu`,
-        password: defaultPassword,
-        firstName,
-        lastName,
-        isActive: true,
-        isEmailVerified: true,
-        roles: [departmentHeadRole._id, evaluatorRole._id],
-        department: departmentDocs[i]._id,
-        lastLoginAt: faker.date.recent({ days: 14 }),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+    // --- 10 Students per department (60 total) ---
+    const studentPersonnel = [];
+    const gradeLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
+
+    for (const dept of departmentDocs) {
+      for (let i = 0; i < 10; i++) {
+        const firstName = faker.person.firstName();
+        const lastName = faker.person.lastName();
+        const gender = faker.helpers.arrayElement(['Male', 'Female']);
+        const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@jcd.edu`.replace(/\s+/g, '');
+        const s = {
+          _id: new ObjectId(),
+          firstName,
+          lastName,
+          middleName: null,
+          email,
+          department: dept._id,
+          jobTitle: 'Student',
+          hireDate: null,
+          phoneNumber: '',
+          gender,
+          personnelType: 'Student',
+          predictedPerformance: null,
+          performanceStatus: null,
+          excellenceStatus: 'Not Evaluated',
+          excellenceStartYear: null,
+          excellenceEndYear: null,
+          excellenceThreshold: null,
+          lastExcellenceCalculation: null,
+          sixYearAverage: null,
+          totalSemestersEvaluated: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        studentPersonnel.push(s);
+        personnel.push(s);
+      }
     }
 
-    // Create 15 Evaluators
-    for (let i = 1; i <= 15; i++) {
-      const firstName = faker.person.firstName();
-      const lastName = faker.person.lastName();
-      const email = faker.internet.email({ firstName, lastName }).toLowerCase();
-      users.push({
-        _id: new ObjectId(),
-        email,
-        password: defaultPassword,
-        firstName,
-        lastName,
-        isActive: faker.datatype.boolean(0.9), // 90% active
-        isEmailVerified: faker.datatype.boolean(0.85),
-        roles: [evaluatorRole._id],
-        department: faker.helpers.arrayElement(departmentDocs)._id,
-        lastLoginAt: faker.helpers.maybe(() => faker.date.recent({ days: 30 }), { probability: 0.7 }),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+    await db.collection('personnels').insertMany(personnel);
+    console.log(`✓ Created ${personnel.length} personnel (9 named + ${teachingPersonnel.length} teaching + ${nonTeachingPersonnel.length} non-teaching + ${studentPersonnel.length} students)`);
+
+    // 4. Generate Users
+    console.log('Generating users...');
+    const defaultPassword = await bcrypt.hash('P@ssw0rd123', 12);
+
+    const superRole = getRole('super');
+    const adminRole = getRole('admin');
+    const deanRole = getRole('dean');
+    const hrRole = getRole('hr');
+    const vpAcadRole = getRole('vp-acad');
+    const presidentRole = getRole('president');
+    const teachingRole = getRole('teaching');
+    const nonTeachingRole = getRole('non-teaching');
+    const studentRole = getRole('student');
+
+    const makeUser = (email, firstName, lastName, roleIds, deptId) => ({
+      _id: new ObjectId(),
+      email,
+      password: defaultPassword,
+      firstName,
+      lastName,
+      isActive: true,
+      isEmailVerified: true,
+      roles: roleIds,
+      department: deptId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const users = [
+      // Super Admin
+      makeUser('superadmin@jcd.edu', 'Super', 'Admin', [superRole._id], null),
+      // Admin
+      makeUser('admin@jcd.edu', 'System', 'Admin', [adminRole._id], null),
+      // President
+      makeUser('ronniel.babano@jcd.edu', 'Ronniel', 'Babano', [presidentRole._id], null),
+      // VP Academic
+      makeUser('beverly.jaminal@jcd.edu', 'Beverly', 'Jaminal', [vpAcadRole._id], null),
+      // Deans
+      makeUser('daisa.gupit@jcd.edu', 'Daisa', 'Gupit', [deanRole._id], getDept('College of Computing and Information Sciences')._id),
+      makeUser('jun.villarima@jcd.edu', 'Jun', 'Villarima', [deanRole._id], getDept('College of Criminal Justice Education')._id),
+      makeUser('rolly.lianos@jcd.edu', 'Rolly', 'Lianos', [deanRole._id], getDept('College of Arts and Sciences')._id),
+      makeUser('melissa.maloloyon@jcd.edu', 'Melissa', 'Maloloy-on', [deanRole._id], getDept('College of Teachers Education')._id),
+      makeUser('russel.coraza@jcd.edu', 'Russel', 'Coraza', [deanRole._id], getDept('College of Business and Accountancy')._id),
+      makeUser('angelyn.paquera@jcd.edu', 'Angelyn', 'Paquera', [deanRole._id], getDept('College of Tourism and Hospitality Management')._id),
+      // HR
+      makeUser('ricky.destacamento@jcd.edu', 'Ricky', 'Destacamento', [hrRole._id], null),
+    ];
+
+    // Teaching users
+    for (const p of teachingPersonnel) {
+      users.push(makeUser(p.email, p.firstName, p.lastName, [teachingRole._id], p.department));
     }
 
-    // Create 30 Faculty Users (linked to teaching personnel)
-    const teachingPersonnelSubset = faker.helpers.arrayElements(teachingPersonnel, 30);
-    for (const person of teachingPersonnelSubset) {
-      users.push({
-        _id: new ObjectId(),
-        email: person.email,
-        password: defaultPassword,
-        firstName: person.firstName,
-        lastName: person.lastName,
-        isActive: faker.datatype.boolean(0.95),
-        isEmailVerified: faker.datatype.boolean(0.8),
-        roles: [facultyRole._id],
-        department: person.department,
-        lastLoginAt: faker.helpers.maybe(() => faker.date.recent({ days: 60 }), { probability: 0.6 }),
-        createdAt: person.createdAt,
-        updatedAt: new Date(),
-      });
+    // Non-teaching users
+    for (const p of nonTeachingPersonnel) {
+      users.push(makeUser(p.email, p.firstName, p.lastName, [nonTeachingRole._id], p.department));
     }
 
-    // Create 20 Staff Users (linked to non-teaching personnel)
-    const nonTeachingPersonnelSubset = faker.helpers.arrayElements(nonTeachingPersonnel, 20);
-    for (const person of nonTeachingPersonnelSubset) {
-      users.push({
-        _id: new ObjectId(),
-        email: person.email,
-        password: defaultPassword,
-        firstName: person.firstName,
-        lastName: person.lastName,
-        isActive: faker.datatype.boolean(0.95),
-        isEmailVerified: faker.datatype.boolean(0.8),
-        roles: [staffRole._id],
-        department: person.department,
-        lastLoginAt: faker.helpers.maybe(() => faker.date.recent({ days: 60 }), { probability: 0.6 }),
-        createdAt: person.createdAt,
-        updatedAt: new Date(),
-      });
+    // Student users
+    for (const s of studentPersonnel) {
+      users.push(makeUser(s.email, s.firstName, s.lastName, [studentRole._id], s.department));
     }
 
     await db.collection('users').insertMany(users);
-    console.log(`✓ Created ${users.length} users (password: password123)`);
+    console.log(`✓ Created ${users.length} users (password: P@ssw0rd123)`);
 
-    // 6. Generate Performance Evaluations for Teaching Personnel
-    console.log('Generating performance evaluations for teaching personnel...');
-    const performanceEvaluations = [];
-    const semesters = [
-      '2023-1st Semester',
-      '2023-2nd Semester',
-      '2024-1st Semester',
-      '2024-2nd Semester',
-      '2025-1st Semester',
-    ];
-
-    for (const person of teachingPersonnel) {
-      // Generate 2-5 evaluations per teaching personnel
-      const numEvaluations = faker.number.int({ min: 2, max: 5 });
-      const selectedSemesters = faker.helpers.arrayElements(semesters, numEvaluations);
-
-      for (const semester of selectedSemesters) {
-        performanceEvaluations.push({
-          _id: new ObjectId(),
-          personnel: person._id,
-          evaluationDate: faker.date.past({ years: 2 }),
-          semester,
-          scores: {
-            PAA: faker.number.float({ min: 1, max: 5, fractionDigits: 2 }), // Performance and Achievement
-            KSM: faker.number.float({ min: 1, max: 5, fractionDigits: 2 }), // Knowledge and Skills Mastery
-            TS: faker.number.float({ min: 1, max: 5, fractionDigits: 2 }),  // Teaching Skills
-            CM: faker.number.float({ min: 1, max: 5, fractionDigits: 2 }),  // Classroom Management
-            AL: faker.number.float({ min: 1, max: 5, fractionDigits: 2 }),  // Attendance and Leave
-            GO: faker.number.float({ min: 1, max: 5, fractionDigits: 2 }),  // Growth and Orientation
-          },
-          feedback: faker.helpers.maybe(() => faker.lorem.paragraph(), { probability: 0.7 }),
-          evaluatedBy: faker.person.fullName(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-      }
-    }
-
-    await db.collection('performanceevaluations').insertMany(performanceEvaluations);
-    console.log(`✓ Created ${performanceEvaluations.length} performance evaluations`);
-
-    // 7. Generate Non-Teaching Evaluations for Non-Teaching Personnel
-    console.log('Generating non-teaching evaluations...');
-    const nonTeachingEvaluations = [];
-
-    for (const person of nonTeachingPersonnel) {
-      // Generate 2-5 evaluations per non-teaching personnel
-      const numEvaluations = faker.number.int({ min: 2, max: 5 });
-      const selectedSemesters = faker.helpers.arrayElements(semesters, numEvaluations);
-
-      for (const semester of selectedSemesters) {
-        nonTeachingEvaluations.push({
-          _id: new ObjectId(),
-          personnel: person._id,
-          evaluationDate: faker.date.past({ years: 2 }),
-          semester,
-          scores: {
-            JK: faker.number.float({ min: 1, max: 5, fractionDigits: 2 }), // Job Knowledge
-            WQ: faker.number.float({ min: 1, max: 5, fractionDigits: 2 }), // Work Quality
-            PR: faker.number.float({ min: 1, max: 5, fractionDigits: 2 }), // Productivity
-            TW: faker.number.float({ min: 1, max: 5, fractionDigits: 2 }), // Teamwork
-            RL: faker.number.float({ min: 1, max: 5, fractionDigits: 2 }), // Reliability
-            IN: faker.number.float({ min: 1, max: 5, fractionDigits: 2 }), // Initiative
-          },
-          feedback: faker.helpers.maybe(() => faker.lorem.paragraph(), { probability: 0.7 }),
-          evaluatedBy: faker.person.fullName(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-      }
-    }
-
-    await db.collection('nonteachingevaluations').insertMany(nonTeachingEvaluations);
-    console.log(`✓ Created ${nonTeachingEvaluations.length} non-teaching evaluations`);
-
-    // 8. Generate Evaluation Forms
+    // 5. Generate Evaluation Forms
     console.log('Generating evaluation forms...');
     const evaluationForms = [
       {
@@ -509,30 +439,34 @@ module.exports = {
     await db.collection('evaluationforms').insertMany(evaluationForms);
     console.log(`✓ Created ${evaluationForms.length} evaluation forms`);
 
-    console.log('\n=== Fake Data Generation Complete ===');
+    console.log('\n=== Data Seeding Complete ===');
     console.log(`Summary:`);
-    console.log(`- Roles: ${roles.length}`);
+    console.log(`- Roles: ${roles.length} (super, admin, president, vp-acad, dean, hr, teaching, non-teaching, student)`);
     console.log(`- Departments: ${departmentDocs.length}`);
-    console.log(`- Teaching Personnel: ${teachingPersonnel.length}`);
-    console.log(`- Non-Teaching Personnel: ${nonTeachingPersonnel.length}`);
-    console.log(`- Users: ${users.length} (default password: password123)`);
-    console.log(`- Performance Evaluations: ${performanceEvaluations.length}`);
-    console.log(`- Non-Teaching Evaluations: ${nonTeachingEvaluations.length}`);
+    console.log(`- Personnel: ${personnel.length} (9 named + 18 teaching + 5 non-teaching + 60 students)`);
+    console.log(`- Users: ${users.length} (default password: P@ssw0rd123)`);
     console.log(`- Evaluation Forms: ${evaluationForms.length}`);
-    console.log(`\nUser Breakdown:`);
-    console.log(`  - Super Admins: 1 (superadmin@jcd.edu)`);
-    console.log(`  - Admins: 2 (admin1@jcd.edu, admin2@jcd.edu)`);
-    console.log(`  - Department Heads: 12 (head.{department}@jcd.edu)`);
-    console.log(`  - Evaluators: 15`);
-    console.log(`  - Faculty: 30`);
-    console.log(`  - Staff: 20`);
+    console.log(`\nNamed User Accounts:`);
+    console.log(`  - Super Admin: superadmin@jcd.edu`);
+    console.log(`  - Admin: admin@jcd.edu`);
+    console.log(`  - President: ronniel.babano@jcd.edu`);
+    console.log(`  - VP Academic: beverly.jaminal@jcd.edu`);
+    console.log(`  - Dean CCIS: daisa.gupit@jcd.edu`);
+    console.log(`  - Dean CCJE: jun.villarima@jcd.edu`);
+    console.log(`  - Dean CAS: rolly.lianos@jcd.edu`);
+    console.log(`  - Dean CTE: melissa.maloloyon@jcd.edu`);
+    console.log(`  - Dean CBA: russel.coraza@jcd.edu`);
+    console.log(`  - Dean CTHM: angelyn.paquera@jcd.edu`);
+    console.log(`  - HR: ricky.destacamento@jcd.edu`);
+    console.log(`  + ${teachingPersonnel.length} teaching faculty users`);
+    console.log(`  + ${nonTeachingPersonnel.length} non-teaching staff users`);
+    console.log(`  + ${studentPersonnel.length} student users`);
     console.log(`=====================================\n`);
   },
 
   async down(db) {
-    console.log('Rolling back fake data...');
+    console.log('Rolling back seeded data...');
 
-    // Remove all seeded data
     await db.collection('roles').deleteMany({});
     await db.collection('departments').deleteMany({});
     await db.collection('personnels').deleteMany({});
@@ -542,5 +476,5 @@ module.exports = {
     await db.collection('evaluationforms').deleteMany({});
 
     console.log('✓ Rollback complete');
-  }
+  },
 };

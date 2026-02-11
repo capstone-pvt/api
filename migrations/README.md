@@ -39,7 +39,7 @@ The migration `20260202000000-seed-fake-data.js` generates comprehensive fake da
    - 15 Evaluators: Various emails
    - 30 Faculty Users: Linked to teaching personnel
    - 20 Staff Users: Linked to non-teaching personnel
-   - **Default password for all users: `password123`**
+   - **Default password for all users: `P@ssw0rd123`**
    - Passwords are hashed using bcrypt (cost factor: 12)
 
 6. **Performance Evaluations (~170 records)**
@@ -75,14 +75,14 @@ Each user record includes:
 
 | Email | Password | Role | Description |
 |-------|----------|------|-------------|
-| superadmin@jcd.edu | password123 | Super Admin | Full system access |
-| admin1@jcd.edu | password123 | Admin | System administrator |
-| admin2@jcd.edu | password123 | Admin | System administrator |
-| head.computerscience@jcd.edu | password123 | Department Head + Evaluator | CS Department |
-| head.mathematics@jcd.edu | password123 | Department Head + Evaluator | Math Department |
-| ... (other department heads) | password123 | Department Head + Evaluator | Various departments |
+| superadmin@jcd.edu | P@ssw0rd123 | Super Admin | Full system access |
+| admin1@jcd.edu | P@ssw0rd123 | Admin | System administrator |
+| admin2@jcd.edu | P@ssw0rd123 | Admin | System administrator |
+| head.computerscience@jcd.edu | P@ssw0rd123 | Department Head + Evaluator | CS Department |
+| head.mathematics@jcd.edu | P@ssw0rd123 | Department Head + Evaluator | Math Department |
+| ... (other department heads) | P@ssw0rd123 | Department Head + Evaluator | Various departments |
 
-All other users have randomly generated emails from their names with the same password `password123`.
+All other users have randomly generated emails from their names with the same password `P@ssw0rd123`.
 
 ## Personnel Fields Generated
 

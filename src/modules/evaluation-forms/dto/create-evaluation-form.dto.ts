@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsDate,
   IsIn,
   IsMongoId,
   IsNotEmpty,
@@ -72,4 +73,9 @@ export class CreateEvaluationFormDto {
   @IsString()
   @IsOptional()
   schoolYear?: string;
+
+  @IsDate()
+  @Type(() => Date)
+  @IsOptional()
+  endDate?: Date;
 }

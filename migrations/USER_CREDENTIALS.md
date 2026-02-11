@@ -4,7 +4,7 @@ This document contains the login credentials for all seeded users in the databas
 
 ## Default Password
 
-**All users have the same password: `password123`**
+**All users have the same password: `P@ssw0rd123`**
 
 ## User Accounts by Role
 
@@ -69,19 +69,19 @@ Roles are organized by hierarchy (lower number = higher authority):
 ### For Testing Admin Features:
 ```
 Email: superadmin@jcd.edu
-Password: password123
+Password: P@ssw0rd123
 ```
 
 ### For Testing Department Management:
 ```
 Email: head.computerscience@jcd.edu
-Password: password123
+Password: P@ssw0rd123
 ```
 
 ### For Testing Evaluator Features:
 ```
 Email: head.mathematics@jcd.edu (also has evaluator role)
-Password: password123
+Password: P@ssw0rd123
 ```
 
 ## User Features

@@ -115,7 +115,9 @@ export class EvaluationFormResponsesController {
     @Param('id', ParseMongoIdPipe) id: string,
     @Query('semester') semester?: string,
   ) {
-    return this.evaluationFormResponsesService.generateReport(id, semester);
+    const semesterFilter =
+      semester && String(semester).trim() ? String(semester).trim() : undefined;
+    return this.evaluationFormResponsesService.generateReport(id, semesterFilter);
   }
 
   @Post(':id/bulk-upload')

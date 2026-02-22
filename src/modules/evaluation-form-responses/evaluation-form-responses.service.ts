@@ -72,11 +72,12 @@ export class EvaluationFormResponsesService {
     if (!Types.ObjectId.isValid(formId)) {
       throw new BadRequestException('Invalid form id format');
     }
-    const query: Record<string, unknown> = { form: formId };
+    const query: Record<string, unknown> = { form: new Types.ObjectId(formId) };
     if (filters?.department) {
       query.respondentDepartment = filters.department;
     }
-    if (filters?.semester) {
+    const semesterValue = filters?.semester && String(filters.semester).trim();
+    if (semesterValue) {
       query.semester = filters.semester;
     }
     if (filters?.startDate || filters?.endDate) {
@@ -96,6 +97,46 @@ export class EvaluationFormResponsesService {
       }
     }
 
+    return this.responseModel.find(query).sort({ createdAt: -1 }).exec();
+  }
+
+  /** Find responses by form ObjectId (used by report to match stored ref exactly). */
+  private findByFormId(
+    formObjectId: Types.ObjectId,
+    filters?: {
+      department?: string;
+      semester?: string;
+      startDate?: string;
+      endDate?: string;
+    },
+  ): Promise<EvaluationFormResponse[]> {
+    // Match whether DB stores form as ObjectId or string (e.g. from imports)
+    const query: Record<string, unknown> = {
+      $or: [{ form: formObjectId }, { form: formObjectId.toString() }],
+    };
+    if (filters?.department) {
+      query.respondentDepartment = filters.department;
+    }
+    const semesterValue = filters?.semester && String(filters.semester).trim();
+    if (semesterValue) {
+      query.semester = filters.semester;
+    }
+    if (filters?.startDate || filters?.endDate) {
+      const start = filters.startDate ? new Date(filters.startDate) : undefined;
+      const end = filters.endDate ? new Date(filters.endDate) : undefined;
+      const range: Record<string, Date> = {};
+      if (start && !Number.isNaN(start.getTime())) {
+        range.$gte = start;
+      }
+      if (end && !Number.isNaN(end.getTime())) {
+        const endDate = new Date(end);
+        endDate.setHours(23, 59, 59, 999);
+        range.$lte = endDate;
+      }
+      if (Object.keys(range).length > 0) {
+        query.createdAt = range;
+      }
+    }
     return this.responseModel.find(query).sort({ createdAt: -1 }).exec();
   }
 
@@ -266,17 +307,24 @@ export class EvaluationFormResponsesService {
   }
 
   async generateReport(formId: string, semester?: string) {
-    const responses = await this.findByForm(formId, { semester });
+    const form = await this.evaluationFormsService.findOne(formId);
+    if (!form) {
+      throw new NotFoundException('Evaluation form not found');
+    }
+    const formObjectId = (form as EvaluationFormDocument)._id;
+    const semesterFilter =
+      semester && String(semester).trim() ? String(semester).trim() : undefined;
+    const responses = await this.findByFormId(formObjectId, { semester: semesterFilter });
     const maxScore = 5;
     const itemMap = new Map<
       string,
       { section: string; item: string; totalScore: number; count: number }
     >();
 
-    let overallTotal = 0;
-    let overallCount = 0;
+    let totalScoreSum = 0;
 
     responses.forEach((response) => {
+      totalScoreSum += response.totalScore ?? 0;
       response.answers.forEach((answer) => {
         const key = `${answer.section}|||${answer.item}`;
         const existing = itemMap.get(key) || {
@@ -288,12 +336,13 @@ export class EvaluationFormResponsesService {
         existing.totalScore += answer.score;
         existing.count += 1;
         itemMap.set(key, existing);
-        overallTotal += answer.score;
-        overallCount += 1;
       });
     });
 
-    const items = Array.from(itemMap.values()).map((entry) => {
+    const totalItems = itemMap.size;
+    const overallAverageScore = totalItems > 0 ? totalScoreSum / totalItems : 0;
+
+    const reportItems = Array.from(itemMap.values()).map((entry) => {
       const averageScore = entry.count > 0 ? entry.totalScore / entry.count : 0;
       return {
         section: entry.section,
@@ -304,15 +353,13 @@ export class EvaluationFormResponsesService {
       };
     });
 
-    const overallAverageScore = overallCount > 0 ? overallTotal / overallCount : 0;
-
     return {
       semester: semester || null,
       totalResponses: responses.length,
       overallAverageScore,
       overallPercentage:
         overallAverageScore > 0 ? (overallAverageScore / maxScore) * 100 : 0,
-      items,
+      items: reportItems,
     };
   }
 

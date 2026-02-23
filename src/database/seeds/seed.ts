@@ -51,7 +51,10 @@ async function seed() {
       });
       logger.log('Created role: Super Admin');
     } else {
-      logger.log('Role already exists: Super Admin');
+      await rolesService.update(superAdminRole._id.toString(), {
+        permissions: allPermissionIds,
+      });
+      logger.log('Updated Super Admin role with all permissions');
     }
 
     // Admin Role - most permissions except permission management

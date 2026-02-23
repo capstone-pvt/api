@@ -11,6 +11,7 @@ import {
 import type { EvaluationFormDocument } from '../evaluation-forms/schemas/evaluation-form.schema';
 import { BulkUploadResult } from './dto/bulk-upload-response.dto';
 import { CreateEvaluationFormResponseDto } from './dto/create-evaluation-form-response.dto';
+import { Personnel, PersonnelDocument } from '../personnel/schemas/personnel.schema';
 
 type RowData = Record<string, unknown>;
 
@@ -25,6 +26,8 @@ export class EvaluationFormResponsesService {
   constructor(
     @InjectModel(EvaluationFormResponse.name)
     private readonly responseModel: Model<EvaluationFormResponseDocument>,
+    @InjectModel(Personnel.name)
+    private readonly personnelModel: Model<PersonnelDocument>,
     private readonly evaluationFormsService: EvaluationFormsService,
   ) {}
 
@@ -360,6 +363,164 @@ export class EvaluationFormResponsesService {
       overallPercentage:
         overallAverageScore > 0 ? (overallAverageScore / maxScore) * 100 : 0,
       items: reportItems,
+    };
+  }
+
+  async generatePersonnelSummary(formId: string, semester?: string) {
+    const form = await this.evaluationFormsService.findOne(formId);
+    if (!form) {
+      throw new NotFoundException('Evaluation form not found');
+    }
+    const formObjectId = (form as EvaluationFormDocument)._id;
+    const semesterFilter =
+      semester && String(semester).trim() ? String(semester).trim() : undefined;
+    const responses = await this.findByFormId(formObjectId, { semester: semesterFilter });
+    const maxScore = 5;
+
+    // Fetch all personnel to get their departments
+    const allPersonnel = await this.personnelModel.find().populate('department').exec();
+    const personnelDepartmentMap = new Map<string, string>();
+
+    allPersonnel.forEach((personnel) => {
+      const fullName = `${personnel.firstName} ${personnel.lastName}`.trim();
+      const departmentName = personnel.department
+        ? (personnel.department as any).name || 'N/A'
+        : 'N/A';
+      personnelDepartmentMap.set(fullName, departmentName);
+    });
+
+    // Group responses by evaluated personnel (evaluator field is the person being evaluated)
+    const personnelMap = new Map<
+      string,
+      {
+        name: string;
+        department: string;
+        totalScore: number;
+        responseCount: number;
+        totalItems: number;
+        semesters: Set<string>;
+        evaluators: Set<string>;
+        itemScores: Map<string, { section: string; item: string; totalScore: number; count: number }>;
+      }
+    >();
+
+    responses.forEach((response) => {
+      // The 'evaluator' field contains the name of the person being evaluated
+      const key = response.evaluator || 'Unknown';
+      const existing = personnelMap.get(key) || {
+        name: key,
+        department: personnelDepartmentMap.get(key) || 'N/A',
+        totalScore: 0,
+        responseCount: 0,
+        totalItems: 0,
+        semesters: new Set<string>(),
+        evaluators: new Set<string>(),
+        itemScores: new Map(),
+      };
+
+      existing.totalScore += response.totalScore ?? 0;
+      existing.responseCount += 1;
+      existing.totalItems += response.answers.length;
+      if (response.semester) {
+        existing.semesters.add(response.semester);
+      }
+      if (response.respondentName) {
+        existing.evaluators.add(response.respondentName);
+      }
+
+      // Aggregate scores per item
+      response.answers.forEach((answer) => {
+        const itemKey = `${answer.section}|||${answer.item}`;
+        const itemData = existing.itemScores.get(itemKey) || {
+          section: answer.section,
+          item: answer.item,
+          totalScore: 0,
+          count: 0,
+        };
+        itemData.totalScore += answer.score;
+        itemData.count += 1;
+        existing.itemScores.set(itemKey, itemData);
+      });
+
+      personnelMap.set(key, existing);
+    });
+
+    // Calculate statistics
+    const personnelList = Array.from(personnelMap.values()).map((personnel) => {
+      const averageScore =
+        personnel.totalItems > 0 ? personnel.totalScore / personnel.totalItems : 0;
+      const percentage = averageScore > 0 ? (averageScore / maxScore) * 100 : 0;
+
+      // Calculate section breakdowns
+      const sectionMap = new Map<
+        string,
+        { section: string; items: any[]; totalScore: number; count: number }
+      >();
+
+      personnel.itemScores.forEach((itemData) => {
+        const section = sectionMap.get(itemData.section) || {
+          section: itemData.section,
+          items: [],
+          totalScore: 0,
+          count: 0,
+        };
+
+        const itemAvg = itemData.count > 0 ? itemData.totalScore / itemData.count : 0;
+        section.items.push({
+          item: itemData.item,
+          averageScore: itemAvg,
+          percentage: (itemAvg / maxScore) * 100,
+          count: itemData.count,
+        });
+        section.totalScore += itemData.totalScore;
+        section.count += itemData.count;
+        sectionMap.set(itemData.section, section);
+      });
+
+      const sections = Array.from(sectionMap.values()).map((section) => ({
+        section: section.section,
+        items: section.items,
+        averageScore: section.count > 0 ? section.totalScore / section.count : 0,
+        percentage: section.count > 0 ? (section.totalScore / section.count / maxScore) * 100 : 0,
+      }));
+
+      return {
+        name: personnel.name,
+        department: personnel.department,
+        responseCount: personnel.responseCount,
+        totalScore: personnel.totalScore,
+        averageScore,
+        percentage,
+        semesters: Array.from(personnel.semesters).join(', '),
+        evaluators: Array.from(personnel.evaluators).join(', '),
+        evaluatorCount: personnel.evaluators.size,
+        sections,
+      };
+    });
+
+    // Sort by average score descending
+    personnelList.sort((a, b) => b.averageScore - a.averageScore);
+
+    // Overall statistics
+    const totalPersonnel = personnelList.length;
+    const totalResponseCount = responses.length;
+    const overallTotalScore = personnelList.reduce((sum, p) => sum + p.totalScore, 0);
+    const overallTotalItems = personnelList.reduce(
+      (sum, p) => sum + p.responseCount * (p.totalScore / p.averageScore || 0),
+      0,
+    );
+    const overallAverageScore =
+      overallTotalItems > 0 ? overallTotalScore / overallTotalItems : 0;
+    const overallPercentage =
+      overallAverageScore > 0 ? (overallAverageScore / maxScore) * 100 : 0;
+
+    return {
+      semester: semester || null,
+      totalPersonnel,
+      totalResponses: totalResponseCount,
+      overallAverageScore,
+      overallPercentage,
+      personnel: personnelList,
     };
   }
 

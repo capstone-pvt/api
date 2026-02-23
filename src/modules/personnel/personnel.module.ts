@@ -13,6 +13,7 @@ import {
   NonTeachingEvaluation,
   NonTeachingEvaluationSchema,
 } from '../non-teaching-evaluations/schemas/non-teaching-evaluation.schema';
+import { SubjectsModule } from '../subjects/subjects.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import {
         schema: NonTeachingEvaluationSchema,
       },
     ]),
+    SubjectsModule,
   ],
   controllers: [PersonnelController],
   providers: [PersonnelService, ExcellenceTrackingService],

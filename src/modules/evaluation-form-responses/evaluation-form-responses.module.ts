@@ -7,11 +7,13 @@ import {
 } from './schemas/evaluation-form-response.schema';
 import { EvaluationFormResponsesService } from './evaluation-form-responses.service';
 import { EvaluationFormResponsesController } from './evaluation-form-responses.controller';
+import { Personnel, PersonnelSchema } from '../personnel/schemas/personnel.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: EvaluationFormResponse.name, schema: EvaluationFormResponseSchema },
+      { name: Personnel.name, schema: PersonnelSchema },
     ]),
     EvaluationFormsModule,
   ],

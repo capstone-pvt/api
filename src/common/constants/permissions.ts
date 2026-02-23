@@ -32,6 +32,12 @@ export const PERMISSION_KEYS = {
   // Evaluation Forms
   EVALUATION_FORMS_READ: 'evaluation-forms.read',
   EVALUATION_FORMS_MANAGE: 'evaluation-forms.manage',
+
+  // Subject Management
+  SUBJECTS_CREATE: 'subjects.create',
+  SUBJECTS_READ: 'subjects.read',
+  SUBJECTS_UPDATE: 'subjects.update',
+  SUBJECTS_DELETE: 'subjects.delete',
 } as const;
 
 export const PERMISSIONS = [
@@ -228,6 +234,44 @@ export const PERMISSIONS = [
     category: 'Evaluation Forms',
     isSystemPermission: true,
   },
+
+  // Subject Management
+  {
+    name: 'subjects.create',
+    displayName: 'Create Subjects',
+    description: 'Create new subjects',
+    resource: 'subjects',
+    action: 'create',
+    category: 'Subject Management',
+    isSystemPermission: true,
+  },
+  {
+    name: 'subjects.read',
+    displayName: 'Read Subjects',
+    description: 'View subject information',
+    resource: 'subjects',
+    action: 'read',
+    category: 'Subject Management',
+    isSystemPermission: true,
+  },
+  {
+    name: 'subjects.update',
+    displayName: 'Update Subjects',
+    description: 'Update subject information',
+    resource: 'subjects',
+    action: 'update',
+    category: 'Subject Management',
+    isSystemPermission: true,
+  },
+  {
+    name: 'subjects.delete',
+    displayName: 'Delete Subjects',
+    description: 'Delete subjects',
+    resource: 'subjects',
+    action: 'delete',
+    category: 'Subject Management',
+    isSystemPermission: true,
+  },
 ];
 
 export const PERMISSION_CATEGORIES = {
@@ -238,6 +282,7 @@ export const PERMISSION_CATEGORIES = {
   ANALYTICS: 'Analytics',
   SETTINGS_MANAGEMENT: 'Settings Management',
   EVALUATION_FORMS: 'Evaluation Forms',
+  SUBJECT_MANAGEMENT: 'Subject Management',
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSION_KEYS;

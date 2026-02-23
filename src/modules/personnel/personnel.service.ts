@@ -34,6 +34,13 @@ export class PersonnelService {
     return this.personnelModel.find(filter).populate('department').exec();
   }
 
+  async findByIds(personnelIds: string[]): Promise<Personnel[]> {
+    return this.personnelModel
+      .find({ _id: { $in: personnelIds } })
+      .populate('department')
+      .exec();
+  }
+
   async findOne(id: string): Promise<Personnel | null> {
     return this.personnelModel.findById(id).populate('department').exec();
   }

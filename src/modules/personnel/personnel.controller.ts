@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PersonnelService } from './personnel.service';
+import { SubjectsService } from '../subjects/subjects.service';
 import { CreatePersonnelDto } from './dto/create-personnel.dto';
 import { UpdatePersonnelDto } from './dto/update-personnel.dto';
 import { BulkUploadPersonnelResponse } from './dto/bulk-upload-response.dto';
@@ -29,6 +30,7 @@ import * as xlsx from 'xlsx';
 export class PersonnelController {
   constructor(
     private readonly personnelService: PersonnelService,
+    private readonly subjectsService: SubjectsService,
     private readonly excellenceTrackingService: ExcellenceTrackingService,
   ) {}
 
@@ -38,14 +40,71 @@ export class PersonnelController {
   }
 
   @Get()
-  findAll(@GetUser() user: AuthenticatedUser) {
+  async findAll(@GetUser() user: AuthenticatedUser) {
     // Check if user has dean role
-    const isDean = user.roles.includes('dean');
+    const isDean = user.roles.some((r) => r.toLowerCase() === 'dean');
+
+    // Check if user has student role
+    const isStudent = user.roles.some((r) => r.toLowerCase() === 'student');
+
+    // If student, filter to only show evaluable personnel (their teachers)
+    if (isStudent && user.department) {
+      // Get subjects for the student's department and grade level
+      const subjects = await this.subjectsService.findByDepartmentAndGradeLevel(
+        user.department,
+        user.gradeLevel,
+      );
+
+      // Extract unique teacher IDs from subjects
+      const teacherIds = new Set<string>();
+      subjects.forEach((subject) => {
+        if (subject.teacher) {
+          const teacherId = typeof subject.teacher === 'string'
+            ? subject.teacher
+            : (subject.teacher as any)._id?.toString();
+          if (teacherId) {
+            teacherIds.add(teacherId);
+          }
+        }
+      });
+
+      // Also get all personnel in the student's department who might need evaluation
+      // (e.g., department heads, deans, admin staff)
+      const allDeptPersonnel = await this.personnelService.findAll(user.department);
+
+      // Filter to include:
+      // 1. Teachers from their subjects
+      // 2. Department personnel with job titles like Dean, Department Head, etc.
+      const evaluablePersonnel = allDeptPersonnel.filter((person) => {
+        const personId = (person as any)._id.toString();
+        const jobTitle = person.jobTitle?.toLowerCase() || '';
+
+        // Include if they're a teacher of student's subjects
+        if (teacherIds.has(personId)) return true;
+
+        // Include department leadership (Dean, Head, Director, etc.)
+        if (
+          jobTitle.includes('dean') ||
+          jobTitle.includes('head') ||
+          jobTitle.includes('director') ||
+          jobTitle.includes('chair')
+        ) {
+          return true;
+        }
+
+        return false;
+      });
+
+      return evaluablePersonnel;
+    }
 
     // If dean, filter by their department
-    const departmentFilter = isDean && user.department ? user.department : undefined;
+    if (isDean && user.department) {
+      return this.personnelService.findAll(user.department);
+    }
 
-    return this.personnelService.findAll(departmentFilter);
+    // For other users, return all personnel
+    return this.personnelService.findAll();
   }
 
   @Get('by-department/:departmentId')

@@ -120,6 +120,17 @@ export class EvaluationFormResponsesController {
     return this.evaluationFormResponsesService.generateReport(id, semesterFilter);
   }
 
+  @Get(':id/personnel-summary')
+  @RequirePermission('evaluation-forms.read')
+  getPersonnelSummary(
+    @Param('id', ParseMongoIdPipe) id: string,
+    @Query('semester') semester?: string,
+  ) {
+    const semesterFilter =
+      semester && String(semester).trim() ? String(semester).trim() : undefined;
+    return this.evaluationFormResponsesService.generatePersonnelSummary(id, semesterFilter);
+  }
+
   @Post(':id/bulk-upload')
   @RequirePermission('evaluation-forms.manage')
   @UseInterceptors(FileInterceptor('file'))

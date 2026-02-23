@@ -21,6 +21,11 @@ class EvaluationScaleItemDto {
 }
 
 class EvaluationSectionDto {
+  /** Short code for the section (e.g. PAA, KSM, TS, CM, AL, GO). */
+  @IsString()
+  @IsOptional()
+  key?: string;
+
   @IsString()
   @IsNotEmpty()
   title: string;

@@ -15,6 +15,7 @@
     "start:prod": "node dist/main",
     "seed": "ts-node -r tsconfig-paths/register src/database/seeds/seed.ts",
     "seed:audit-logs": "ts-node -r tsconfig-paths/register src/database/seeds/audit-logs.seed.ts",
+    "seed:evaluation-forms": "ts-node -r tsconfig-paths/register src/database/seeds/evaluation-forms-responses.seed.ts",
     "migrate": "migrate-mongo up",
     "migrate:down": "migrate-mongo down",
     "migrate:status": "migrate-mongo status",

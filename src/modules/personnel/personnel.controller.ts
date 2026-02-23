@@ -273,4 +273,15 @@ export class PersonnelController {
       dto.endYear,
     );
   }
+
+  // Metric sync endpoints
+  @Post(':id/sync-metrics')
+  async syncMetricAverages(@Param('id', ParseMongoIdPipe) id: string) {
+    return this.personnelService.syncMetricAverages(id);
+  }
+
+  @Post('sync-all-metrics')
+  async syncAllMetricAverages() {
+    return this.personnelService.syncAllMetricAverages();
+  }
 }

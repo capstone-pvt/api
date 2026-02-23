@@ -63,6 +63,47 @@ export class Personnel {
 
   @Prop()
   totalSemestersEvaluated: number;
+
+  // Synced metric averages (for Teaching personnel)
+  @Prop()
+  avgPAA: number;
+
+  @Prop()
+  avgKSM: number;
+
+  @Prop()
+  avgTS: number;
+
+  @Prop()
+  avgCM: number;
+
+  @Prop()
+  avgAL: number;
+
+  @Prop()
+  avgGO: number;
+
+  @Prop()
+  lastMetricSync: Date;
+
+  // Synced metric averages (for Non-Teaching personnel)
+  @Prop()
+  avgJK: number;
+
+  @Prop()
+  avgWQ: number;
+
+  @Prop()
+  avgPR: number;
+
+  @Prop()
+  avgTW: number;
+
+  @Prop()
+  avgRL: number;
+
+  @Prop()
+  avgIN: number;
 }
 
 export const PersonnelSchema = SchemaFactory.createForClass(Personnel);

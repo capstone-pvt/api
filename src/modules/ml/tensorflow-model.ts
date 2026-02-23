@@ -314,7 +314,8 @@ export async function evaluateModel(
 }
 
 /**
- * Saves the TensorFlow model and normalizer to disk
+ * Saves the TensorFlow model and normalizer to disk.
+ * Uses a custom IOHandler because file:// is only supported with @tensorflow/tfjs-node.
  */
 export async function saveModel(
   model: tf.LayersModel,
@@ -322,16 +323,46 @@ export async function saveModel(
   trainingHistory: TrainingHistory,
   metrics: ModelMetrics,
 ): Promise<void> {
-  // Create models directory if it doesn't exist
-  const modelsDir = path.dirname(MODEL_SAVE_PATH);
-  if (!fs.existsSync(modelsDir)) {
-    fs.mkdirSync(modelsDir, { recursive: true });
+  if (!fs.existsSync(MODEL_SAVE_PATH)) {
+    fs.mkdirSync(MODEL_SAVE_PATH, { recursive: true });
   }
 
-  // Save the TensorFlow model
-  await model.save(`file://${MODEL_SAVE_PATH}`);
+  await model.save(
+    tf.io.withSaveHandler(async (artifacts) => {
+      const weightsPath = path.join(MODEL_SAVE_PATH, 'weights.bin');
+      const weightData =
+        artifacts.weightData != null
+          ? Array.isArray(artifacts.weightData)
+            ? Buffer.concat(
+                artifacts.weightData.map((ab) => Buffer.from(new Uint8Array(ab))),
+              )
+            : Buffer.from(new Uint8Array(artifacts.weightData))
+          : Buffer.alloc(0);
+      fs.writeFileSync(weightsPath, weightData);
+      const modelJson = {
+        modelTopology: artifacts.modelTopology,
+        weightsManifest: [
+          {
+            paths: ['weights.bin'],
+            weights: artifacts.weightSpecs,
+          },
+        ],
+      };
+      const modelJsonPath = path.join(MODEL_SAVE_PATH, 'model.json');
+      const modelJsonStr = JSON.stringify(modelJson, null, 2);
+      fs.writeFileSync(modelJsonPath, modelJsonStr);
+      return {
+        modelArtifactsInfo: {
+          dateSaved: new Date(),
+          modelTopologyType: 'JSON' as const,
+          modelTopologyBytes: Buffer.byteLength(modelJsonStr, 'utf-8'),
+          weightSpecsBytes: JSON.stringify(artifacts.weightSpecs).length,
+          weightDataBytes: weightData.length,
+        },
+      };
+    }),
+  );
 
-  // Save normalizer parameters and metadata
   const metadata = {
     normalizerParams: normalizer.getParams(),
     trainingHistory,
@@ -339,7 +370,6 @@ export async function saveModel(
     trainedAt: new Date().toISOString(),
     modelVersion: '1.0.0',
   };
-
   const metadataPath = path.join(MODEL_SAVE_PATH, 'metadata.json');
   fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
 
@@ -347,7 +377,8 @@ export async function saveModel(
 }
 
 /**
- * Loads the TensorFlow model and normalizer from disk
+ * Loads the TensorFlow model and normalizer from disk.
+ * Uses a custom IOHandler because file:// is only supported with @tensorflow/tfjs-node.
  */
 export async function loadModel(): Promise<{
   model: tf.LayersModel;
@@ -357,7 +388,6 @@ export async function loadModel(): Promise<{
   trainedAt: Date;
 } | null> {
   try {
-    // Check if model exists
     const modelJsonPath = path.join(MODEL_SAVE_PATH, 'model.json');
     const metadataPath = path.join(MODEL_SAVE_PATH, 'metadata.json');
 
@@ -366,13 +396,26 @@ export async function loadModel(): Promise<{
       return null;
     }
 
-    // Load the TensorFlow model
-    const model = await tf.loadLayersModel(`file://${modelJsonPath}`);
+    const modelJson = JSON.parse(fs.readFileSync(modelJsonPath, 'utf-8'));
+    const weightsPath = path.join(MODEL_SAVE_PATH, 'weights.bin');
+    if (!fs.existsSync(weightsPath)) {
+      console.log('Weights file not found');
+      return null;
+    }
+    const weightData = fs.readFileSync(weightsPath);
+    const weightSpecs = modelJson.weightsManifest?.[0]?.weights ?? [];
+    const weightDataArrayBuffer = new Uint8Array(weightData).buffer;
 
-    // Load metadata
+    const handler: tf.io.IOHandler = {
+      load: async () => ({
+        modelTopology: modelJson.modelTopology,
+        weightSpecs,
+        weightData: weightDataArrayBuffer,
+      }),
+    };
+    const model = await tf.loadLayersModel(handler);
+
     const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
-
-    // Restore normalizer
     const normalizer = new DataNormalizer();
     normalizer.loadParams(metadata.normalizerParams);
 

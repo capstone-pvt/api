@@ -13,6 +13,10 @@ import {
   PerformanceEvaluation,
   PerformanceEvaluationDocument,
 } from '../performance-evaluations/schemas/performance-evaluation.schema';
+import {
+  EvaluationFormResponse,
+  EvaluationFormResponseDocument,
+} from '../evaluation-form-responses/schemas/evaluation-form-response.schema';
 import { Model } from 'mongoose';
 import {
   FEATURES,
@@ -55,6 +59,23 @@ export interface TrainingResponse {
   trainedAt: Date;
 }
 
+// Section to Metric mapping
+const SECTION_TO_METRIC_MAP: Record<string, string> = {
+  'Professionalism & Attitude Assessment': 'PAA',
+  'Knowledge & Skill Management': 'KSM',
+  'Technical Skills': 'TS',
+  'Communication Management': 'CM',
+  'Attitude & Leadership': 'AL',
+  'Goal Orientation': 'GO',
+  // Add variations for flexibility
+  'PAA': 'PAA',
+  'KSM': 'KSM',
+  'TS': 'TS',
+  'CM': 'CM',
+  'AL': 'AL',
+  'GO': 'GO',
+};
+
 @Injectable()
 export class MlService {
   constructor(
@@ -62,6 +83,8 @@ export class MlService {
     private readonly performanceEvaluationsService: PerformanceEvaluationsService,
     @InjectModel(PerformanceEvaluation.name)
     private readonly performanceEvaluationModel: Model<PerformanceEvaluationDocument>,
+    @InjectModel(EvaluationFormResponse.name)
+    private readonly evaluationFormResponseModel: Model<EvaluationFormResponseDocument>,
   ) {
     this.initializeModel();
   }
@@ -219,6 +242,74 @@ export class MlService {
     };
   }
 
+  /**
+   * Aggregate evaluation form responses for a personnel to calculate metric scores
+   */
+  private async aggregateEvaluationResponses(
+    personnelId: string,
+  ): Promise<Record<string, number> | null> {
+    // Get personnel info to match by name
+    const personnel = await this.personnelService.findOne(personnelId);
+    if (!personnel) {
+      return null;
+    }
+
+    const personnelFullName = `${personnel.firstName} ${personnel.lastName}`.trim();
+
+    // Find all evaluation form responses where this personnel is being evaluated
+    const responses = await this.evaluationFormResponseModel
+      .find({ evaluator: personnelFullName })
+      .exec();
+
+    if (responses.length === 0) {
+      return null;
+    }
+
+    // Aggregate scores by section
+    const sectionScores = new Map<
+      string,
+      { totalScore: number; count: number }
+    >();
+
+    responses.forEach((response) => {
+      response.answers.forEach((answer) => {
+        const section = answer.section;
+        const existing = sectionScores.get(section) || {
+          totalScore: 0,
+          count: 0,
+        };
+        existing.totalScore += answer.score;
+        existing.count += 1;
+        sectionScores.set(section, existing);
+      });
+    });
+
+    // Calculate average per section and map to metrics
+    const metrics: Record<string, number> = {};
+
+    sectionScores.forEach((data, section) => {
+      const average = data.count > 0 ? data.totalScore / data.count : 0;
+      const metricKey = SECTION_TO_METRIC_MAP[section];
+
+      if (metricKey) {
+        // If metric already exists, average them (in case multiple sections map to same metric)
+        if (metrics[metricKey]) {
+          metrics[metricKey] = (metrics[metricKey] + average) / 2;
+        } else {
+          metrics[metricKey] = average;
+        }
+      }
+    });
+
+    // Ensure all required features are present
+    const hasAllFeatures = FEATURES.every((feature) => feature in metrics);
+    if (!hasAllFeatures) {
+      return null;
+    }
+
+    return metrics;
+  }
+
   async predictPerformance(personnelId: string): Promise<PredictionResponse> {
     if (!tensorflowModel) {
       throw new NotFoundException(
@@ -226,20 +317,24 @@ export class MlService {
       );
     }
 
-    const latestEvaluation =
-      await this.performanceEvaluationsService.findLatestByPersonnelId(
-        personnelId,
-      );
-    if (!latestEvaluation) {
-      throw new NotFoundException(
-        'No performance evaluation found for this person. Please add an evaluation first.',
-      );
+    // First, try to get data from evaluation form responses
+    let features = await this.aggregateEvaluationResponses(personnelId);
+
+    // If no evaluation responses found, fall back to performance evaluation records
+    if (!features) {
+      const latestEvaluation =
+        await this.performanceEvaluationsService.findLatestByPersonnelId(
+          personnelId,
+        );
+      if (!latestEvaluation) {
+        throw new NotFoundException(
+          'No evaluation data found for this person. Please add evaluation responses or performance evaluation first.',
+        );
+      }
+
+      features = latestEvaluation.scores as unknown as Record<string, number>;
     }
 
-    const features = latestEvaluation.scores as unknown as Record<
-      string,
-      number
-    >;
     const prediction = await predict(
       tensorflowModel.model,
       tensorflowModel.normalizer,

@@ -19,6 +19,10 @@ export class UserFiltersDto {
   role?: string;
 
   @IsOptional()
+  @IsString()
+  department?: string;
+
+  @IsOptional()
   @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;

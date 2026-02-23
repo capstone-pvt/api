@@ -13,6 +13,7 @@ import {
   NotFoundException,
   BadRequestException,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -41,6 +42,17 @@ import { ParseMongoIdPipe } from '../../common/pipes/parse-mongo-id.pipe';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  private isDean(user: AuthenticatedUser): boolean {
+    return user.roles.some((r) => r.toLowerCase() === 'dean');
+  }
+
+  private getDepartmentId(user: { department?: unknown }): string | null {
+    if (user.department == null) return null;
+    if (typeof user.department === 'string') return user.department;
+    const d = user.department as { _id?: { toString(): string } };
+    return d._id ? d._id.toString() : String(user.department);
+  }
+
   @ApiOperation({ summary: 'Get all users with pagination and filters' })
   @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -50,14 +62,19 @@ export class UsersController {
   })
   @Get()
   @RequirePermission('users.read')
-  async findAll(@Query() filters: UserFiltersDto) {
+  async findAll(@Query() filters: UserFiltersDto, @GetUser() user: AuthenticatedUser) {
+    // Deans can only see users in their own department (teaching, students, etc.)
+    if (this.isDean(user) && user.department) {
+      filters.department = user.department;
+    }
+
     const { users, total, page, limit, totalPages } =
       await this.usersService.findAll(filters);
 
     return {
       success: true,
       data: {
-        users: users.map((user) => this.sanitizeUser(user)),
+        users: users.map((u) => this.sanitizeUser(u)),
         pagination: {
           total,
           page,
@@ -79,7 +96,14 @@ export class UsersController {
   @ApiResponse({ status: 409, description: 'User already exists' })
   @Post()
   @RequirePermission('users.create')
-  async create(@Body() createUserDto: CreateUserDto) {
+  async create(
+    @Body() createUserDto: CreateUserDto,
+    @GetUser() currentUser: AuthenticatedUser,
+  ) {
+    // Deans can only create users in their own department
+    if (this.isDean(currentUser) && currentUser.department) {
+      createUserDto.department = currentUser.department;
+    }
     const user = await this.usersService.create(createUserDto);
 
     return {
@@ -101,11 +125,22 @@ export class UsersController {
   })
   @Get(':id')
   @RequirePermission('users.read')
-  async findOne(@Param('id', ParseMongoIdPipe) id: string) {
+  async findOne(
+    @Param('id', ParseMongoIdPipe) id: string,
+    @GetUser() currentUser: AuthenticatedUser,
+  ) {
     const user = await this.usersService.findById(id);
 
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    // Deans can only view users in their own department
+    if (this.isDean(currentUser) && currentUser.department) {
+      const targetDeptId = this.getDepartmentId(user);
+      if (targetDeptId !== currentUser.department) {
+        throw new NotFoundException('User not found');
+      }
     }
 
     return {
@@ -146,6 +181,23 @@ export class UsersController {
       throw new UnauthorizedException(
         'You can only update your own profile or need users.update permission',
       );
+    }
+
+    // Deans can only update users in their own department (and cannot change department)
+    if (this.isDean(currentUser) && !isSelf && currentUser.department) {
+      const targetDeptId = this.getDepartmentId(user);
+      if (targetDeptId !== currentUser.department) {
+        throw new ForbiddenException(
+          'You can only manage users in your own department',
+        );
+      }
+      // Prevent Dean from moving a user to another department
+      if (updateUserDto.department && updateUserDto.department !== currentUser.department) {
+        throw new ForbiddenException(
+          'You cannot assign users to a different department',
+        );
+      }
+      updateUserDto.department = currentUser.department;
     }
 
     // If updating roles or isActive, require users.update permission
@@ -196,6 +248,16 @@ export class UsersController {
       throw new NotFoundException('User not found');
     }
 
+    // Deans can only delete users in their own department
+    if (this.isDean(currentUser) && currentUser.department) {
+      const targetDeptId = this.getDepartmentId(user);
+      if (targetDeptId !== currentUser.department) {
+        throw new ForbiddenException(
+          'You can only delete users in your own department',
+        );
+      }
+    }
+
     await this.usersService.delete(id);
 
     return {
@@ -218,11 +280,22 @@ export class UsersController {
   async assignRoles(
     @Param('id', ParseMongoIdPipe) id: string,
     @Body() assignRolesDto: AssignRolesDto,
+    @GetUser() currentUser: AuthenticatedUser,
   ) {
     const user = await this.usersService.findById(id);
 
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    // Deans can only assign roles to users in their own department
+    if (this.isDean(currentUser) && currentUser.department) {
+      const targetDeptId = this.getDepartmentId(user);
+      if (targetDeptId !== currentUser.department) {
+        throw new ForbiddenException(
+          'You can only assign roles to users in your own department',
+        );
+      }
     }
 
     const updatedUser = await this.usersService.updateRoles(

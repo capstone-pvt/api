@@ -20,6 +20,10 @@ const EvaluationScaleItemSchema = SchemaFactory.createForClass(
 
 @Schema({ _id: false })
 class EvaluationSection {
+  /** Short code for the section (e.g. PAA, KSM, TS, CM, AL, GO). */
+  @Prop({ trim: true })
+  key?: string;
+
   @Prop({ required: true })
   title: string;
 

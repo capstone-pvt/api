@@ -7,10 +7,13 @@ import {
   Body,
   Get,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MlService, PredictionResponse, TrainingResponse } from './ml.service';
 import { ManualPredictionDto } from './dto/manual-prediction.dto';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Controller('ml')
 export class MlController {
@@ -39,9 +42,32 @@ export class MlController {
   @Post('train')
   @UseInterceptors(FileInterceptor('file'))
   async trainModel(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file?: Express.Multer.File,
   ): Promise<TrainingResponse> {
-    return this.mlService.trainModelFromFile(file.buffer);
+    let fileBuffer: Buffer;
+
+    if (file) {
+      // Use uploaded file
+      fileBuffer = file.buffer;
+    } else {
+      // Use default CSV file: try api/data (when run from api/) then api/data (when run from repo root)
+      const cwd = process.cwd();
+      const candidates = [
+        path.join(cwd, 'data', 'employee_history_sample.csv'),
+        path.join(cwd, 'api', 'data', 'employee_history_sample.csv'),
+      ];
+      const defaultFilePath = candidates.find((p) => fs.existsSync(p));
+
+      if (!defaultFilePath) {
+        throw new BadRequestException(
+          'No file uploaded and default training file not found. Please upload a CSV file or ensure employee_history_sample.csv exists in the data directory (api/data/ or data/).'
+        );
+      }
+
+      fileBuffer = fs.readFileSync(defaultFilePath);
+    }
+
+    return this.mlService.trainModelFromFile(fileBuffer);
   }
 
   @Post('predict/:personnelId')

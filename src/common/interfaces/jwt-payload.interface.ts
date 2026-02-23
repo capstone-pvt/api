@@ -16,4 +16,5 @@ export interface AuthenticatedUser {
   department?: string;
   departmentName?: string;
   fullName?: string;
+  gradeLevel?: string;
 }

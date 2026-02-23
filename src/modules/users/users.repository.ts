@@ -74,6 +74,7 @@ export class UsersRepository {
     const {
       search,
       role,
+      department,
       isActive,
       page = 1,
       limit = 20,
@@ -96,12 +97,35 @@ export class UsersRepository {
       query.isActive = isActive;
     }
 
+    // Apply role filter at database level
+    if (role) {
+      const roleDoc = await this.roleModel.findOne({ name: role }).exec();
+      if (roleDoc) {
+        query.roles = roleDoc._id;
+      } else {
+        // If role doesn't exist, return empty results
+        return {
+          users: [],
+          total: 0,
+          page,
+          limit,
+          totalPages: 0,
+        };
+      }
+    }
+
+    // Apply department filter
+    if (department && Types.ObjectId.isValid(department)) {
+      query.department = new Types.ObjectId(department);
+    }
+
     const users = await this.userModel
       .find(query)
       .populate({
         path: 'roles',
         populate: { path: 'permissions' },
       })
+      .populate('department')
       .sort({ [sortBy]: order === 'asc' ? 1 : -1 })
       .skip((page - 1) * limit)
       .limit(limit)
@@ -109,19 +133,12 @@ export class UsersRepository {
 
     const total = await this.userModel.countDocuments(query);
 
-    let filteredUsers = users;
-    if (role) {
-      filteredUsers = users.filter((user) =>
-        user.roles.some((r: any) => (r as { name: string }).name === role),
-      );
-    }
-
     return {
-      users: filteredUsers,
-      total: role ? filteredUsers.length : total,
+      users,
+      total,
       page,
       limit,
-      totalPages: Math.ceil((role ? filteredUsers.length : total) / limit),
+      totalPages: Math.ceil(total / limit),
     };
   }
 
